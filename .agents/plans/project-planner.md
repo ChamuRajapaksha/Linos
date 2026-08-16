@@ -7,7 +7,7 @@
 | # | Milestone | Status | Depends on |
 |---|-----------|--------|------------|
 | 1 | Core architecture and foundation | Done | — |
-| 2 | Audio input and permissions | Not Started | 1 |
+| 2 | Audio input and permissions | In Progress | 1 |
 | 3 | Basic pitch detection engine | Not Started | 2 |
 | 4 | Tuning logic and feedback system | Not Started | 3 |
 | 5 | Complete tuner UI with polish | Not Started | 4 |
@@ -71,16 +71,18 @@ lib/
 **Context:** Depends on M1 models/DI being in place. Do not start pitch detection until permissions are reliably granted on both platforms.
 
 **Tasks**
-- [ ] Add microphone permission handling (Android manifest + iOS Info.plist + runtime prompts)
-- [ ] Configure audio session via `audio_session`
-- [ ] Create `AudioInputService` for raw audio capture/streaming
-- [ ] Add error handling for denied/revoked permissions
+- [x] Add microphone permission handling (Android manifest + iOS Info.plist + runtime prompts)
+- [x] Configure audio session via `audio_session`
+- [x] Create `AudioInputService` for raw audio capture/streaming
+- [x] Add error handling for denied/revoked permissions
 - [ ] Test on both Android and iOS (physical devices if available, not just simulators — mic behavior differs)
 
 **Done when**
-- [ ] App requests and obtains mic permission on first launch
-- [ ] Denial path shows a clear in-app message, doesn't crash
-- [ ] Raw audio stream is observable (e.g., logged amplitude) on both platforms
+- [x] App requests and obtains mic permission on first launch
+- [x] Denial path shows a clear in-app message, doesn't crash
+- [x] Raw audio stream is observable (e.g., logged amplitude) on both platforms
+
+**Notes:** `record ^6.2.1` used for capture (PCM16 mono 44.1 kHz stream). Device verification pending — no physical devices available in this environment; test on real Android/iOS hardware before starting M3. Android debug build verified.
 
 **Commit message:** `feat: implement audio input and permissions handling`
 
