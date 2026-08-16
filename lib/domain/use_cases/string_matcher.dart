@@ -36,15 +36,11 @@ class StringMatch {
 }
 
 class StringMatcher {
-  StringMatcher({
+  const StringMatcher({
     this.tuning = Tuning.standard,
     this.classifier = const TuningStatusClassifier(),
     this.maxHarmonic = 3,
-  }) {
-    if (maxHarmonic < 1) {
-      throw ArgumentError('maxHarmonic must be >= 1, was $maxHarmonic');
-    }
-  }
+  }) : assert(maxHarmonic >= 1);
 
   final Tuning tuning;
   final TuningStatusClassifier classifier;

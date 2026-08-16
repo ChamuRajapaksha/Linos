@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../domain/models/pitch_detection.dart';
+import '../../../../domain/models/tuning_status.dart';
+import '../../../../domain/use_cases/string_matcher.dart';
 import '../view_models/tuner_view_model.dart';
 
 class TunerView extends StatefulWidget {
@@ -124,7 +126,10 @@ class _TunerViewState extends State<TunerView> {
           ),
           if (kDebugMode) ...[
             const SizedBox(height: 16),
-            _DebugPitchReadout(pitch: widget.viewModel.pitch),
+            _DebugPitchReadout(
+              pitch: widget.viewModel.pitch,
+              stringMatch: widget.viewModel.stringMatch,
+            ),
           ],
           const SizedBox(height: 24),
           const _StringRow(),
@@ -410,15 +415,17 @@ class _StringRow extends StatelessWidget {
 }
 
 class _DebugPitchReadout extends StatelessWidget {
-  const _DebugPitchReadout({required this.pitch});
+  const _DebugPitchReadout({required this.pitch, required this.stringMatch});
 
   final PitchDetection? pitch;
+  final StringMatch? stringMatch;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
     final PitchDetection? pitch = this.pitch;
+    final StringMatch? stringMatch = this.stringMatch;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -437,22 +444,58 @@ class _DebugPitchReadout extends StatelessWidget {
           if (pitch == null)
             Text('No pitch detected', style: theme.textTheme.labelMedium)
           else
-            Row(
+            Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(pitch.note.label, style: theme.textTheme.titleMedium),
-                const SizedBox(width: 12),
-                Text(
-                  '${pitch.frequency.value.toStringAsFixed(1)} Hz  '
-                  '${pitch.centsOffset >= 0 ? '+' : ''}'
-                  '${pitch.centsOffset.toStringAsFixed(1)} ¢  '
-                  'conf ${(pitch.confidence * 100).round()}%',
-                  style: theme.textTheme.labelMedium,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(pitch.note.label, style: theme.textTheme.titleMedium),
+                    const SizedBox(width: 12),
+                    Text(
+                      '${pitch.frequency.value.toStringAsFixed(1)} Hz  '
+                      '${pitch.centsOffset >= 0 ? '+' : ''}'
+                      '${pitch.centsOffset.toStringAsFixed(1)} ¢  '
+                      'conf ${(pitch.confidence * 100).round()}%',
+                      style: theme.textTheme.labelMedium,
+                    ),
+                  ],
                 ),
+                if (stringMatch != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${stringMatch.targetNote.label} · '
+                        '${stringMatch.status.label}',
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '${stringMatch.centsOffset >= 0 ? '+' : ''}'
+                        '${stringMatch.centsOffset.toStringAsFixed(1)} ¢',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: _statusColor(stringMatch.status),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
         ],
       ),
     );
+  }
+
+  Color _statusColor(TuningStatus status) {
+    switch (status) {
+      case TuningStatus.inTune:
+        return Colors.green;
+      case TuningStatus.flat:
+      case TuningStatus.sharp:
+        return Colors.orange;
+    }
   }
 }
