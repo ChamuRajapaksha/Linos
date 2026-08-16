@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../../domain/models/pitch_detection.dart';
 import '../view_models/tuner_view_model.dart';
 
 class TunerView extends StatefulWidget {
@@ -99,38 +101,44 @@ class _TunerViewState extends State<TunerView> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
     final double level = widget.viewModel.level;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const _Branding(),
-        const SizedBox(height: 32),
-        const _TunerGauge(),
-        const SizedBox(height: 28),
-        SizedBox(
-          width: 220,
-          child: Row(
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const _Branding(),
+          const SizedBox(height: 32),
+          const _TunerGauge(),
+          const SizedBox(height: 28),
+          SizedBox(
+            width: 220,
+            child: Row(
+              children: [
+                Expanded(child: _LevelBar(level: level)),
+                const SizedBox(width: 12),
+                Text(
+                  'LEVEL ${(level * 100).round()}%',
+                  style: theme.textTheme.labelMedium,
+                ),
+              ],
+            ),
+          ),
+          if (kDebugMode) ...[
+            const SizedBox(height: 16),
+            _DebugPitchReadout(pitch: widget.viewModel.pitch),
+          ],
+          const SizedBox(height: 24),
+          const _StringRow(),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(child: _LevelBar(level: level)),
-              const SizedBox(width: 12),
-              Text(
-                'LEVEL ${(level * 100).round()}%',
-                style: theme.textTheme.labelMedium,
-              ),
+              Icon(Icons.mic_none, size: 16, color: scheme.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Text('Listening…', style: theme.textTheme.labelMedium),
             ],
           ),
-        ),
-        const SizedBox(height: 24),
-        const _StringRow(),
-        const SizedBox(height: 24),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.mic_none, size: 16, color: scheme.onSurfaceVariant),
-            const SizedBox(width: 8),
-            Text('Listening…', style: theme.textTheme.labelMedium),
-          ],
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -397,6 +405,54 @@ class _StringRow extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _DebugPitchReadout extends StatelessWidget {
+  const _DebugPitchReadout({required this.pitch});
+
+  final PitchDetection? pitch;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final PitchDetection? pitch = this.pitch;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'DEBUG PITCH',
+            style: theme.textTheme.labelSmall
+                ?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          if (pitch == null)
+            Text('No pitch detected', style: theme.textTheme.labelMedium)
+          else
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(pitch.note.label, style: theme.textTheme.titleMedium),
+                const SizedBox(width: 12),
+                Text(
+                  '${pitch.frequency.value.toStringAsFixed(1)} Hz  '
+                  '${pitch.centsOffset >= 0 ? '+' : ''}'
+                  '${pitch.centsOffset.toStringAsFixed(1)} ¢  '
+                  'conf ${(pitch.confidence * 100).round()}%',
+                  style: theme.textTheme.labelMedium,
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 }
