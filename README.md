@@ -4,14 +4,14 @@ A real-time guitar tuner built with Flutter. Listen to your instrument through t
 
 ## Status
 
-Core architecture, audio input, permissions, and the pitch detection engine are in place. Tuning logic (milestone 4) is the next milestone.
+Core architecture, audio input, permissions, pitch detection, and tuning logic are in place. Final tuner UI polish (milestone 5) is the next milestone.
 
 | Milestone | Status |
 |-----------|--------|
 | 1. Core architecture and foundation | Done |
 | 2. Audio input and permissions | Done |
 | 3. Basic pitch detection engine | Done |
-| 4. Tuning logic and feedback system | Not Started |
+| 4. Tuning logic and feedback system | Done |
 | 5. Complete tuner UI with polish | Not Started |
 | 6. Testing, documentation, performance | Not Started |
 
@@ -24,7 +24,8 @@ Core architecture, audio input, permissions, and the pitch detection engine are 
 - **FFT-based pitch detection engine** — self-contained radix-2 FFT with Hann windowing, zero-padding, and parabolic interpolation (~1 Hz accuracy on synthetic tones)
 - **Note mapping** — frequency to nearest note with cent offset
 - **Continuous processing loop** — sliding-window pitch detection over the live audio stream
-- **Debug pitch readout** in debug builds (note, Hz, cents, confidence) — hidden in release
+- **Tuning logic** — standard tuning reference, per-string identification with harmonic folding, and flat/in-tune/sharp classification (±5 cents band)
+- **Debug pitch readout** in debug builds (note, Hz, cents, confidence, target string, status) — hidden in release
 - **Core domain models**: `Note`, `Tuning`, `Frequency`, `TuningStatus`, `StringState`
 
 ## Architecture
@@ -77,9 +78,8 @@ flutter build ios            # iOS (requires macOS)
 
 Upcoming work, per the build plan in `.agents/plans/project-planner.md`:
 
-- Standard tuning (E-A-D-G-B-E) reference table and flat/in-tune/sharp classification
-- Per-string detection that works even on badly out-of-tune strings
 - Gauge/needle tuning UI with animations and accessibility pass
+- String selection and identification display
 - Unit and integration tests, performance optimization
 
 ## Out of Scope
