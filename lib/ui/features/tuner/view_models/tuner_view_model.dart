@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../../../data/services/audio_input_service.dart';
+import '../../../../data/services/pitch_detection_service.dart';
+import '../../../../domain/models/pitch_detection.dart';
 import '../../../../domain/use_cases/level_calculator.dart';
 
 enum TunerViewState {
@@ -15,19 +17,27 @@ enum TunerViewState {
 }
 
 class TunerViewModel extends ChangeNotifier {
-  TunerViewModel({required AudioInputService audioInputService})
-      : _audioInputService = audioInputService;
+  TunerViewModel({
+    required AudioInputService audioInputService,
+    required PitchDetectionService pitchDetectionService,
+  })  : _audioInputService = audioInputService,
+        _pitchDetectionService = pitchDetectionService;
 
   final AudioInputService _audioInputService;
+  final PitchDetectionService _pitchDetectionService;
 
   MicrophonePermissionState? _permission;
   StreamSubscription<List<double>>? _subscription;
+  StreamSubscription<PitchDetection>? _pitchSubscription;
 
   TunerViewState _state = TunerViewState.loading;
   TunerViewState get state => _state;
 
   double _level = 0;
   double get level => _level;
+
+  PitchDetection? _pitch;
+  PitchDetection? get pitch => _pitch;
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
@@ -69,8 +79,12 @@ class TunerViewModel extends ChangeNotifier {
   Future<void> stop() async {
     await _subscription?.cancel();
     _subscription = null;
+    await _pitchSubscription?.cancel();
+    _pitchSubscription = null;
+    _pitch = null;
     _level = 0;
     await _audioInputService.stop().catchError((Object _) {});
+    await _pitchDetectionService.stop().catchError((Object _) {});
     _setState(TunerViewState.loading);
   }
 
@@ -78,7 +92,10 @@ class TunerViewModel extends ChangeNotifier {
   void dispose() {
     _subscription?.cancel();
     _subscription = null;
+    _pitchSubscription?.cancel();
+    _pitchSubscription = null;
     unawaited(_audioInputService.stop());
+    unawaited(_pitchDetectionService.dispose());
     super.dispose();
   }
 
@@ -92,6 +109,10 @@ class TunerViewModel extends ChangeNotifier {
         onError: _handleError,
         onDone: _onStreamDone,
       );
+      await _pitchSubscription?.cancel();
+      _pitchSubscription = null;
+      await _pitchDetectionService.start();
+      _pitchSubscription = _pitchDetectionService.pitchStream.listen(_onPitch);
       _setState(TunerViewState.recording);
     } catch (error) {
       _handleError(error);
@@ -118,8 +139,15 @@ class TunerViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _onPitch(PitchDetection detection) {
+    _pitch = detection;
+    notifyListeners();
+  }
+
   void _onStreamDone() {
     _subscription = null;
+    _pitchSubscription?.cancel();
+    _pitchSubscription = null;
     _errorMessage = 'Audio stream ended unexpectedly.';
     _setState(TunerViewState.error);
   }
@@ -127,6 +155,10 @@ class TunerViewModel extends ChangeNotifier {
   void _handleError(Object error) {
     _subscription?.cancel();
     _subscription = null;
+    _pitchSubscription?.cancel();
+    _pitchSubscription = null;
+    _pitch = null;
+    unawaited(_pitchDetectionService.stop());
     _errorMessage = error.toString();
     _setState(TunerViewState.error);
   }

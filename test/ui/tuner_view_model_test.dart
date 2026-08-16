@@ -2,7 +2,11 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linos/data/services/audio_input_service.dart';
+import 'package:linos/data/services/pitch_detection_service.dart';
 import 'package:linos/data/services/record_audio_input_service.dart';
+import 'package:linos/domain/models/frequency.dart';
+import 'package:linos/domain/models/note.dart';
+import 'package:linos/domain/models/pitch_detection.dart';
 import 'package:linos/ui/features/tuner/view_models/tuner_view_model.dart';
 
 class FakeAudioInputService implements AudioInputService {
@@ -51,13 +55,68 @@ class FakeAudioInputService implements AudioInputService {
   }
 }
 
+class FakePitchDetectionService extends PitchDetectionService {
+  FakePitchDetectionService(AudioInputService audioInputService)
+      : super(audioInputService: audioInputService);
+
+  final StreamController<PitchDetection> _controller =
+      StreamController<PitchDetection>.broadcast();
+
+  int startCalls = 0;
+  int stopCalls = 0;
+  int disposeCalls = 0;
+
+  @override
+  Stream<PitchDetection> get pitchStream => _controller.stream;
+
+  @override
+  Future<void> start() async {
+    startCalls++;
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCalls++;
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposeCalls++;
+    await stop();
+  }
+
+  void pushDetection(PitchDetection detection) {
+    _controller.add(detection);
+  }
+}
+
+PitchDetection detection({
+  double frequency = 440.0,
+  String name = 'A',
+  int octave = 4,
+  double centsOffset = 0.0,
+  double confidence = 0.9,
+  double rms = 0.5,
+}) {
+  return PitchDetection(
+    frequency: Frequency(value: frequency),
+    note: Note(name: name, octave: octave, frequency: frequency),
+    centsOffset: centsOffset,
+    confidence: confidence,
+    rms: rms,
+  );
+}
+
 void main() {
   group('TunerViewModel', () {
     test('initialize with denied permission shows permissionRequired and does not start', () async {
       final service = FakeAudioInputService(
         permissionState: MicrophonePermissionState.denied,
       );
-      final viewModel = TunerViewModel(audioInputService: service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+      );
 
       await viewModel.initialize();
 
@@ -70,7 +129,10 @@ void main() {
       final service = FakeAudioInputService(
         permissionState: MicrophonePermissionState.granted,
       );
-      final viewModel = TunerViewModel(audioInputService: service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+      );
 
       await viewModel.initialize();
 
@@ -90,7 +152,10 @@ void main() {
       final service = FakeAudioInputService(
         permissionState: MicrophonePermissionState.permanentlyDenied,
       );
-      final viewModel = TunerViewModel(audioInputService: service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+      );
 
       await viewModel.initialize();
 
@@ -102,7 +167,10 @@ void main() {
       final service = FakeAudioInputService(
         permissionState: MicrophonePermissionState.restricted,
       );
-      final viewModel = TunerViewModel(audioInputService: service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+      );
 
       await viewModel.initialize();
 
@@ -115,7 +183,10 @@ void main() {
       final service = FakeAudioInputService(
         permissionState: MicrophonePermissionState.denied,
       );
-      final viewModel = TunerViewModel(audioInputService: service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+      );
 
       await viewModel.initialize();
       expect(viewModel.state, TunerViewState.permissionRequired);
@@ -131,7 +202,10 @@ void main() {
       final service = FakeAudioInputService(
         permissionState: MicrophonePermissionState.denied,
       );
-      final viewModel = TunerViewModel(audioInputService: service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+      );
 
       await viewModel.requestPermission();
 
@@ -144,7 +218,10 @@ void main() {
         permissionState: MicrophonePermissionState.granted,
       );
       service.throwOnStart = true;
-      final viewModel = TunerViewModel(audioInputService: service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+      );
 
       await viewModel.initialize();
 
@@ -157,7 +234,10 @@ void main() {
       final service = FakeAudioInputService(
         permissionState: MicrophonePermissionState.granted,
       );
-      final viewModel = TunerViewModel(audioInputService: service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+      );
 
       await viewModel.initialize();
       expect(viewModel.state, TunerViewState.recording);
@@ -173,7 +253,10 @@ void main() {
       final service = FakeAudioInputService(
         permissionState: MicrophonePermissionState.granted,
       );
-      final viewModel = TunerViewModel(audioInputService: service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+      );
 
       await viewModel.initialize();
       service.pushSamples([1, 1, 1, 1]);
@@ -194,7 +277,10 @@ void main() {
       final service = FakeAudioInputService(
         permissionState: MicrophonePermissionState.granted,
       );
-      final viewModel = TunerViewModel(audioInputService: service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+      );
 
       await viewModel.initialize();
       expect(service.checkPermissionCalls, 1);
@@ -206,6 +292,78 @@ void main() {
       expect(viewModel.state, TunerViewState.recording);
       expect(service.checkPermissionCalls, 1);
       expect(service.startCalls, 2);
+    });
+
+    test('pitch is null initially and updates from the pitch service', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+      );
+
+      await viewModel.initialize();
+
+      expect(viewModel.state, TunerViewState.recording);
+      expect(viewModel.pitch, isNull);
+      expect(pitchService.startCalls, 1);
+
+      pitchService.pushDetection(detection());
+      await pumpEventQueue();
+
+      expect(viewModel.pitch, isNotNull);
+      expect(viewModel.pitch!.note.label, 'A4');
+      expect(viewModel.pitch!.frequency.value, 440);
+    });
+
+    test('stop resets pitch and stops the pitch service', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+      );
+
+      await viewModel.initialize();
+      pitchService.pushDetection(detection());
+      await pumpEventQueue();
+      expect(viewModel.pitch, isNotNull);
+
+      await viewModel.stop();
+
+      expect(viewModel.state, TunerViewState.loading);
+      expect(viewModel.pitch, isNull);
+      expect(pitchService.stopCalls, 1);
+    });
+
+    test('pitch detections after stop do not update the view model', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+      );
+
+      await viewModel.initialize();
+      pitchService.pushDetection(detection());
+      await pumpEventQueue();
+      expect(viewModel.pitch!.frequency.value, 440);
+
+      await viewModel.stop();
+      expect(viewModel.pitch, isNull);
+
+      pitchService.pushDetection(
+        detection(frequency: 523.25, name: 'C', octave: 5),
+      );
+      await pumpEventQueue();
+
+      expect(viewModel.pitch, isNull);
     });
   });
 }
