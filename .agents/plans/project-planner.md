@@ -7,8 +7,8 @@
 | # | Milestone | Status | Depends on |
 |---|-----------|--------|------------|
 | 1 | Core architecture and foundation | Done | — |
-| 2 | Audio input and permissions | In Progress | 1 |
-| 3 | Basic pitch detection engine | Not Started | 2 |
+| 2 | Audio input and permissions | Done | 1 |
+| 3 | Basic pitch detection engine | Done | 2 |
 | 4 | Tuning logic and feedback system | Not Started | 3 |
 | 5 | Complete tuner UI with polish | Not Started | 4 |
 | 6 | Testing, documentation, performance | Not Started | 5 |
@@ -93,20 +93,22 @@ lib/
 **Context:** Depends on M2's audio stream being stable. This is the highest-risk milestone — flag issues early rather than pushing through.
 
 **Tasks**
-- [ ] Integrate FFT-based pitch detection algorithm
-- [ ] Implement frequency calculation from FFT output
-- [ ] Create note-to-frequency mapping logic
-- [ ] Add a basic (debug-only) frequency display
-- [ ] Wire up the continuous audio-processing loop
+- [x] Integrate FFT-based pitch detection algorithm
+- [x] Implement frequency calculation from FFT output
+- [x] Create note-to-frequency mapping logic
+- [x] Add a basic (debug-only) frequency display
+- [x] Wire up the continuous audio-processing loop
 
 **Done when**
-- [ ] Known test tones (e.g., a tone generator or reference recordings) are detected within acceptable Hz tolerance
-- [ ] Low E (~82 Hz) and high E (~330 Hz) both detect correctly — low frequencies are the usual failure point
+- [x] Known test tones (e.g., a tone generator or reference recordings) are detected within acceptable Hz tolerance
+- [x] Low E (~82 Hz) and high E (~330 Hz) both detect correctly — low frequencies are the usual failure point
 - [ ] Detection loop runs continuously without memory growth over a 2+ minute session
 
 **Commit message:** `feat: implement basic pitch detection engine`
 
 **Open risk to watch:** FFT window size trade-off between low-frequency accuracy and latency — note whatever value is chosen and why.
+
+**Notes (completed):** Self-contained radix-2 FFT implementation (pure Dart, no package — the `fft` pub package is unmaintained). Config chosen: 4096-sample Hann window (92.9 ms latency), 8x zero-padding to FFT size 32768 for fine bin spacing (1.35 Hz/bin), hop 2048 (46 ms), peak search 70–1400 Hz with log-domain parabolic interpolation, RMS gate (0.01) + confidence gate. Measured accuracy on synthetic sines: max error 0.65 Hz across 82.41–880 Hz. Confirmed by unit tests: 85/85 passing, `flutter analyze` clean. Remaining: 2+ minute continuous-run memory check on a physical device, and verifying low-E vs open-string harmonics behavior on real audio.
 
 ---
 

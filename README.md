@@ -4,13 +4,13 @@ A real-time guitar tuner built with Flutter. Listen to your instrument through t
 
 ## Status
 
-Early development. Core architecture, audio input, and microphone permission handling are in place. Pitch detection (milestone 3) is the next milestone.
+Core architecture, audio input, permissions, and the pitch detection engine are in place. Tuning logic (milestone 4) is the next milestone.
 
 | Milestone | Status |
 |-----------|--------|
 | 1. Core architecture and foundation | Done |
-| 2. Audio input and permissions | In Progress |
-| 3. Basic pitch detection engine | Not Started |
+| 2. Audio input and permissions | Done |
+| 3. Basic pitch detection engine | Done |
 | 4. Tuning logic and feedback system | Not Started |
 | 5. Complete tuner UI with polish | Not Started |
 | 6. Testing, documentation, performance | Not Started |
@@ -21,7 +21,11 @@ Early development. Core architecture, audio input, and microphone permission han
 - **Microphone input** via the `record` package (PCM16 mono 44.1 kHz stream) with runtime permission handling on Android and iOS
 - **Audio session configuration** via `audio_session`
 - **Dependency injection** with `get_it`
-- **Core domain models** ready for tuning logic: `Note`, `Tuning`, `Frequency`, `TuningStatus`, `StringState`
+- **FFT-based pitch detection engine** — self-contained radix-2 FFT with Hann windowing, zero-padding, and parabolic interpolation (~1 Hz accuracy on synthetic tones)
+- **Note mapping** — frequency to nearest note with cent offset
+- **Continuous processing loop** — sliding-window pitch detection over the live audio stream
+- **Debug pitch readout** in debug builds (note, Hz, cents, confidence) — hidden in release
+- **Core domain models**: `Note`, `Tuning`, `Frequency`, `TuningStatus`, `StringState`
 
 ## Architecture
 
@@ -73,7 +77,6 @@ flutter build ios            # iOS (requires macOS)
 
 Upcoming work, per the build plan in `.agents/plans/project-planner.md`:
 
-- FFT-based pitch detection with a real-time processing loop
 - Standard tuning (E-A-D-G-B-E) reference table and flat/in-tune/sharp classification
 - Per-string detection that works even on badly out-of-tune strings
 - Gauge/needle tuning UI with animations and accessibility pass
