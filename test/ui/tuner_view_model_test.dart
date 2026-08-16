@@ -7,6 +7,8 @@ import 'package:linos/data/services/record_audio_input_service.dart';
 import 'package:linos/domain/models/frequency.dart';
 import 'package:linos/domain/models/note.dart';
 import 'package:linos/domain/models/pitch_detection.dart';
+import 'package:linos/domain/models/tuning_status.dart';
+import 'package:linos/domain/use_cases/string_matcher.dart';
 import 'package:linos/ui/features/tuner/view_models/tuner_view_model.dart';
 
 class FakeAudioInputService implements AudioInputService {
@@ -116,6 +118,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -132,6 +135,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -155,6 +159,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -170,6 +175,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -186,6 +192,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -205,6 +212,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.requestPermission();
@@ -221,6 +229,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -237,6 +246,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -256,6 +266,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -280,6 +291,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -302,6 +314,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -326,6 +339,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -348,6 +362,7 @@ void main() {
       final viewModel = TunerViewModel(
         audioInputService: service,
         pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
       );
 
       await viewModel.initialize();
@@ -364,6 +379,106 @@ void main() {
       await pumpEventQueue();
 
       expect(viewModel.pitch, isNull);
+    });
+
+    test('stringMatch is null initially', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+
+      expect(viewModel.stringMatch, isNull);
+    });
+
+    test('stringMatch identifies an in-tune A2 open string', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      pitchService.pushDetection(detection(frequency: 110.0, octave: 2));
+      await pumpEventQueue();
+
+      expect(viewModel.stringMatch, isNotNull);
+      expect(viewModel.stringMatch!.stringIndex, 1);
+      expect(viewModel.stringMatch!.targetNote.label, 'A2');
+      expect(viewModel.stringMatch!.status, TuningStatus.inTune);
+      expect(viewModel.stringMatch!.centsOffset.abs(), lessThan(0.5));
+    });
+
+    test('stringMatch identifies a flat A string below target', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      pitchService.pushDetection(detection(frequency: 100.0, octave: 2));
+      await pumpEventQueue();
+
+      expect(viewModel.stringMatch!.stringIndex, 1);
+      expect(viewModel.stringMatch!.status, TuningStatus.flat);
+      expect(viewModel.stringMatch!.centsOffset, lessThan(0));
+    });
+
+    test('stringMatch identifies the low E string at 82.41 Hz', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      pitchService.pushDetection(detection(frequency: 82.41, octave: 2));
+      await pumpEventQueue();
+
+      expect(viewModel.stringMatch!.stringIndex, 0);
+      expect(viewModel.stringMatch!.targetNote.label, 'E2');
+    });
+
+    test('stop resets stringMatch and later detections do not update it', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      pitchService.pushDetection(detection(frequency: 110.0, octave: 2));
+      await pumpEventQueue();
+      expect(viewModel.stringMatch, isNotNull);
+
+      await viewModel.stop();
+      expect(viewModel.stringMatch, isNull);
+
+      pitchService.pushDetection(detection(frequency: 110.0, octave: 2));
+      await pumpEventQueue();
+      expect(viewModel.stringMatch, isNull);
     });
   });
 }

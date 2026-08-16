@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import '../data/services/audio_input_service.dart';
 import '../data/services/pitch_detection_service.dart';
 import '../data/services/record_audio_input_service.dart';
+import '../domain/use_cases/string_matcher.dart';
 import '../ui/features/tuner/view_models/tuner_view_model.dart';
 
 final GetIt locator = GetIt.instance;
@@ -19,11 +20,15 @@ abstract final class Locator {
         ),
       );
     }
+    if (!locator.isRegistered<StringMatcher>()) {
+      locator.registerLazySingleton<StringMatcher>(StringMatcher.new);
+    }
     if (!locator.isRegistered<TunerViewModel>()) {
       locator.registerLazySingleton<TunerViewModel>(
         () => TunerViewModel(
           audioInputService: locator<AudioInputService>(),
           pitchDetectionService: locator<PitchDetectionService>(),
+          stringMatcher: locator<StringMatcher>(),
         ),
       );
     }

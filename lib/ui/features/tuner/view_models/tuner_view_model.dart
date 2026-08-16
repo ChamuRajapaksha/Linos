@@ -6,6 +6,7 @@ import '../../../../data/services/audio_input_service.dart';
 import '../../../../data/services/pitch_detection_service.dart';
 import '../../../../domain/models/pitch_detection.dart';
 import '../../../../domain/use_cases/level_calculator.dart';
+import '../../../../domain/use_cases/string_matcher.dart';
 
 enum TunerViewState {
   loading,
@@ -20,11 +21,14 @@ class TunerViewModel extends ChangeNotifier {
   TunerViewModel({
     required AudioInputService audioInputService,
     required PitchDetectionService pitchDetectionService,
+    required StringMatcher stringMatcher,
   })  : _audioInputService = audioInputService,
-        _pitchDetectionService = pitchDetectionService;
+        _pitchDetectionService = pitchDetectionService,
+        _stringMatcher = stringMatcher;
 
   final AudioInputService _audioInputService;
   final PitchDetectionService _pitchDetectionService;
+  final StringMatcher _stringMatcher;
 
   MicrophonePermissionState? _permission;
   StreamSubscription<List<double>>? _subscription;
@@ -38,6 +42,9 @@ class TunerViewModel extends ChangeNotifier {
 
   PitchDetection? _pitch;
   PitchDetection? get pitch => _pitch;
+
+  StringMatch? _stringMatch;
+  StringMatch? get stringMatch => _stringMatch;
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
@@ -82,6 +89,7 @@ class TunerViewModel extends ChangeNotifier {
     await _pitchSubscription?.cancel();
     _pitchSubscription = null;
     _pitch = null;
+    _stringMatch = null;
     _level = 0;
     await _audioInputService.stop().catchError((Object _) {});
     await _pitchDetectionService.stop().catchError((Object _) {});
@@ -141,6 +149,7 @@ class TunerViewModel extends ChangeNotifier {
 
   void _onPitch(PitchDetection detection) {
     _pitch = detection;
+    _stringMatch = _stringMatcher.identify(detection.frequency.value);
     notifyListeners();
   }
 
@@ -158,6 +167,7 @@ class TunerViewModel extends ChangeNotifier {
     _pitchSubscription?.cancel();
     _pitchSubscription = null;
     _pitch = null;
+    _stringMatch = null;
     unawaited(_pitchDetectionService.stop());
     _errorMessage = error.toString();
     _setState(TunerViewState.error);
