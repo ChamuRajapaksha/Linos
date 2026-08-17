@@ -77,13 +77,13 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('Listening…'), findsOneWidget);
+    expect(find.text('Play a string to tune'), findsOneWidget);
 
     fake.pushSamples([0.8, 0.8, 0.8, 0.8]);
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('LEVEL 80%'), findsOneWidget);
+    expect(find.text('080%'), findsOneWidget);
   });
 
   test('TunerViewModel is resolvable from the locator', () {
