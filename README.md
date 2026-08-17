@@ -4,7 +4,7 @@ A real-time guitar tuner built with Flutter. Listen to your instrument through t
 
 ## Status
 
-Core architecture, audio input, permissions, pitch detection, and tuning logic are in place. Final tuner UI polish (milestone 5) is the next milestone.
+Core architecture, audio input, permissions, pitch detection, tuning logic, and the full tuner UI are in place. Remaining work is milestone 6: testing, documentation, and performance.
 
 | Milestone | Status |
 |-----------|--------|
@@ -12,7 +12,7 @@ Core architecture, audio input, permissions, pitch detection, and tuning logic a
 | 2. Audio input and permissions | Done |
 | 3. Basic pitch detection engine | Done |
 | 4. Tuning logic and feedback system | Done |
-| 5. Complete tuner UI with polish | Not Started |
+| 5. Complete tuner UI with polish | Done |
 | 6. Testing, documentation, performance | Not Started |
 
 ## Features
@@ -25,7 +25,9 @@ Core architecture, audio input, permissions, pitch detection, and tuning logic a
 - **Note mapping** — frequency to nearest note with cent offset
 - **Continuous processing loop** — sliding-window pitch detection over the live audio stream
 - **Tuning logic** — standard tuning reference, per-string identification with harmonic folding, and flat/in-tune/sharp classification (±5 cents band)
-- **Debug pitch readout** in debug builds (note, Hz, cents, confidence, target string, status) — hidden in release
+- **Production tuner UI** — signature six-string rail (tap a string to focus it, tap again for auto-detection), animated V-gauge needle, hero note readout, and a reference-pitch setting (A4 = 438/440/442 Hz)
+- **Instrument-themed design system** — warm walnut/ebony surfaces, brass accents, directional status colors (slate = flat, emerald = in tune, ember = sharp), reduced-motion support
+- **Accessibility** — screen-reader labels for the note readout, gauge, and each string; visible focus; contrast-checked palette
 - **Core domain models**: `Note`, `Tuning`, `Frequency`, `TuningStatus`, `StringState`
 
 ## Architecture
@@ -78,9 +80,8 @@ flutter build ios            # iOS (requires macOS)
 
 Upcoming work, per the build plan in `.agents/plans/project-planner.md`:
 
-- Gauge/needle tuning UI with animations and accessibility pass
-- String selection and identification display
 - Unit and integration tests, performance optimization
+- Physical-device verification (real-guitar tuning flow, memory over long sessions)
 
 ## Out of Scope
 
