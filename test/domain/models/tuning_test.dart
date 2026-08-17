@@ -50,6 +50,32 @@ void main() {
     });
   });
 
+  group('Tuning.retunedTo', () {
+    test('at 440 returns the same frequencies', () {
+      final retuned = Tuning.standard.retunedTo(440);
+      expect(retuned.name, 'Standard');
+      for (var i = 0; i < Tuning.standard.notes.length; i++) {
+        expect(
+          retuned.notes[i].frequency,
+          closeTo(Tuning.standard.notes[i].frequency, 1e-9),
+        );
+      }
+    });
+
+    test('shifts all frequencies by the reference ratio', () {
+      final retuned = Tuning.standard.retunedTo(442);
+      expect(retuned.notes.length, 6);
+      expect(retuned.notes[0].label, 'E2');
+      expect(retuned.notes[0].frequency, closeTo(82.41 * (442 / 440), 0.01));
+      expect(retuned.notes[5].frequency, closeTo(329.63 * (442 / 440), 0.01));
+    });
+
+    test('at 438 shifts frequencies down', () {
+      final retuned = Tuning.standard.retunedTo(438);
+      expect(retuned.notes[1].frequency, closeTo(110.0 * (438 / 440), 0.01));
+    });
+  });
+
   group('Tuning equality', () {
     test('equal for same name and notes', () {
       const other = Tuning(

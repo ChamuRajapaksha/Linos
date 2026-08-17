@@ -99,6 +99,20 @@ class StringMatcher {
     );
   }
 
+  StringMatch identifyString(int stringIndex, double frequency) {
+    if (stringIndex < 0 || stringIndex >= tuning.notes.length) {
+      throw ArgumentError('stringIndex out of range: $stringIndex');
+    }
+    final state = analyzeForString(stringIndex, frequency);
+    return StringMatch(
+      stringIndex: stringIndex,
+      targetNote: state.targetNote,
+      centsOffset: state.centsOffset ?? 0,
+      harmonic: 1,
+      status: state.status,
+    );
+  }
+
   List<StringState> analyzeAll(double frequency) {
     return [
       for (var i = 0; i < tuning.notes.length; i++)

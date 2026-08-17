@@ -209,6 +209,63 @@ void main() {
     });
   });
 
+  group('StringMatcher.identifyString', () {
+    test('returns an in-tune match for the exact target frequency', () {
+      final match = matcher.identifyString(0, 82.41);
+      expect(match.stringIndex, 0);
+      expect(match.targetNote.label, 'E2');
+      expect(match.harmonic, 1);
+      expect(match.centsOffset, closeTo(0, 0.01));
+      expect(match.status, TuningStatus.inTune);
+    });
+
+    test('reports a flat offset for a flat string', () {
+      final match = matcher.identifyString(1, 100.0);
+      expect(match.stringIndex, 1);
+      expect(match.targetNote.label, 'A2');
+      expect(match.centsOffset, closeTo(-165.0, 0.1));
+      expect(match.status, TuningStatus.flat);
+    });
+
+    test('reports a sharp offset for a sharp string', () {
+      final match = matcher.identifyString(5, 340.0);
+      expect(match.stringIndex, 5);
+      expect(match.targetNote.label, 'E4');
+      expect(match.centsOffset, closeTo(53.62, 0.1));
+      expect(match.status, TuningStatus.sharp);
+    });
+
+    test('does not jump strings when detuned beyond ambiguity', () {
+      final match = matcher.identifyString(0, 70.0);
+      expect(match.stringIndex, 0);
+      expect(match.targetNote.label, 'E2');
+      expect(match.centsOffset, closeTo(-282.56, 0.1));
+    });
+
+    test('throws for an out-of-range string index', () {
+      expect(() => matcher.identifyString(-1, 82.41), throwsArgumentError);
+      expect(() => matcher.identifyString(6, 82.41), throwsArgumentError);
+    });
+  });
+
+  group('StringMatcher with a retuned reference pitch', () {
+    final matcher442 = StringMatcher(tuning: Tuning.standard.retunedTo(442));
+
+    test('A2 target moves up with A4=442', () {
+      final match = matcher442.identifyString(1, 110.5);
+      expect(match.stringIndex, 1);
+      expect(match.targetNote.label, 'A2');
+      expect(match.centsOffset, closeTo(0, 0.1));
+      expect(match.status, TuningStatus.inTune);
+    });
+
+    test('110.0 at A4=442 reads slightly flat', () {
+      final match = matcher442.identifyString(1, 110.0);
+      expect(match.centsOffset, closeTo(-7.85, 0.1));
+      expect(match.status, TuningStatus.flat);
+    });
+  });
+
   group('StringMatcher with a custom tuning', () {
     const dropD = Tuning(
       name: 'Drop D',

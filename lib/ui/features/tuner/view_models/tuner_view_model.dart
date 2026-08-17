@@ -4,9 +4,12 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../data/services/audio_input_service.dart';
 import '../../../../data/services/pitch_detection_service.dart';
+import '../../../../domain/models/note.dart';
 import '../../../../domain/models/pitch_detection.dart';
+import '../../../../domain/models/tuning.dart';
 import '../../../../domain/use_cases/level_calculator.dart';
 import '../../../../domain/use_cases/string_matcher.dart';
+import '../../../../domain/use_cases/tuning_status_classifier.dart';
 
 enum TunerViewState {
   loading,
@@ -22,13 +25,21 @@ class TunerViewModel extends ChangeNotifier {
     required AudioInputService audioInputService,
     required PitchDetectionService pitchDetectionService,
     required StringMatcher stringMatcher,
+    double a4Reference = Note.a4Reference,
   })  : _audioInputService = audioInputService,
         _pitchDetectionService = pitchDetectionService,
-        _stringMatcher = stringMatcher;
+        _stringMatcher = stringMatcher,
+        _a4Reference = a4Reference;
 
   final AudioInputService _audioInputService;
   final PitchDetectionService _pitchDetectionService;
-  final StringMatcher _stringMatcher;
+  StringMatcher _stringMatcher;
+
+  double _a4Reference;
+  double get a4Reference => _a4Reference;
+
+  int? _selectedString;
+  int? get selectedString => _selectedString;
 
   MicrophonePermissionState? _permission;
   StreamSubscription<List<double>>? _subscription;
@@ -45,6 +56,8 @@ class TunerViewModel extends ChangeNotifier {
 
   StringMatch? _stringMatch;
   StringMatch? get stringMatch => _stringMatch;
+
+  List<Note> get tuningNotes => _stringMatcher.tuning.notes;
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
@@ -149,7 +162,35 @@ class TunerViewModel extends ChangeNotifier {
 
   void _onPitch(PitchDetection detection) {
     _pitch = detection;
-    _stringMatch = _stringMatcher.identify(detection.frequency.value);
+    _stringMatch = _selectedString != null
+        ? _stringMatcher.identifyString(
+            _selectedString!,
+            detection.frequency.value,
+          )
+        : _stringMatcher.identify(detection.frequency.value);
+    notifyListeners();
+  }
+
+  void selectString(int? stringIndex) {
+    _selectedString = stringIndex;
+    if (_pitch != null) {
+      _onPitch(_pitch!);
+    }
+    notifyListeners();
+  }
+
+  void setReferencePitch(double reference) {
+    if (reference <= 0 || reference == _a4Reference) {
+      return;
+    }
+    _a4Reference = reference;
+    _stringMatcher = StringMatcher(
+      tuning: Tuning.standard.retunedTo(reference),
+      classifier: const TuningStatusClassifier(),
+    );
+    if (_pitch != null) {
+      _onPitch(_pitch!);
+    }
     notifyListeners();
   }
 

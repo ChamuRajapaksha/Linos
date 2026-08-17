@@ -480,5 +480,128 @@ void main() {
       await pumpEventQueue();
       expect(viewModel.stringMatch, isNull);
     });
+
+    test('selecting a string fixes the match to that string', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      viewModel.selectString(0);
+      expect(viewModel.selectedString, 0);
+
+      pitchService.pushDetection(detection(frequency: 100.0, octave: 2));
+      await pumpEventQueue();
+
+      expect(viewModel.stringMatch, isNotNull);
+      expect(viewModel.stringMatch!.stringIndex, 0);
+      expect(viewModel.stringMatch!.targetNote.label, 'E2');
+    });
+
+    test('selecting a string reclassifies the existing pitch immediately',
+        () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      pitchService.pushDetection(detection(frequency: 100.0, octave: 2));
+      await pumpEventQueue();
+      expect(viewModel.stringMatch!.stringIndex, 1);
+
+      viewModel.selectString(0);
+      expect(viewModel.selectedString, 0);
+      expect(viewModel.stringMatch!.stringIndex, 0);
+      expect(viewModel.stringMatch!.targetNote.label, 'E2');
+    });
+
+    test('deselecting returns to auto string identification', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      viewModel.selectString(0);
+      viewModel.selectString(null);
+      expect(viewModel.selectedString, isNull);
+
+      pitchService.pushDetection(detection(frequency: 110.0, octave: 2));
+      await pumpEventQueue();
+      expect(viewModel.stringMatch!.stringIndex, 1);
+    });
+
+    test('tuning notes come from the configured tuning', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
+      );
+
+      expect(viewModel.a4Reference, 440);
+      expect(viewModel.tuningNotes.length, 6);
+      expect(viewModel.tuningNotes[0].label, 'E2');
+      expect(viewModel.tuningNotes[5].label, 'E4');
+    });
+
+    test('setReferencePitch retunes the string matcher', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      viewModel.setReferencePitch(442);
+      expect(viewModel.a4Reference, 442);
+      expect(viewModel.tuningNotes[1].frequency, closeTo(110.0 * (442 / 440), 0.01));
+
+      pitchService.pushDetection(detection(frequency: 110.5, octave: 2));
+      await pumpEventQueue();
+      expect(viewModel.stringMatch!.stringIndex, 1);
+      expect(viewModel.stringMatch!.status, TuningStatus.inTune);
+    });
+
+    test('setReferencePitch ignores invalid and unchanged values', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
+      );
+
+      viewModel.setReferencePitch(440);
+      expect(viewModel.a4Reference, 440);
+      viewModel.setReferencePitch(0);
+      expect(viewModel.a4Reference, 440);
+      viewModel.setReferencePitch(-5);
+      expect(viewModel.a4Reference, 440);
+    });
   });
 }
