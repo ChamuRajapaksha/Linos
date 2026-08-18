@@ -129,6 +129,46 @@ void main() {
     });
   });
 
+  group('StringMatcher.identify - 4th harmonic folding', () {
+    test('329.63 (high E) resolves at harmonic 1, not low E harmonic 4', () {
+      final four = StringMatcher(maxHarmonic: 4);
+      final match = four.identify(329.63);
+      expect(match!.stringIndex, 5);
+      expect(match.harmonic, 1);
+      expect(match.centsOffset, closeTo(0, 0.01));
+    });
+
+    test('587.33 (D3 4th harmonic) folds to D3 with maxHarmonic 4', () {
+      final four = StringMatcher(maxHarmonic: 4);
+      final match = four.identify(587.33);
+      expect(match!.stringIndex, 2);
+      expect(match.harmonic, 4);
+      expect(match.centsOffset, closeTo(0, 0.1));
+    });
+
+    test('587.33 lands on G3 at harmonic 3 with maxHarmonic 3', () {
+      final three = StringMatcher(maxHarmonic: 3);
+      final match = three.identify(587.33);
+      expect(match!.stringIndex, 3);
+      expect(match.harmonic, 3);
+      expect(match.centsOffset, closeTo(-2, 0.5));
+    });
+
+    test('default StringMatcher folds the 4th harmonic', () {
+      final match = matcher.identify(587.33);
+      expect(match!.stringIndex, 2);
+      expect(match.harmonic, 4);
+      expect(match.centsOffset, closeTo(0, 0.1));
+    });
+
+    test('3rd harmonic of low E still wins over nearby fundamentals', () {
+      final match = matcher.identify(247.23);
+      expect(match!.stringIndex, 0);
+      expect(match.harmonic, 3);
+      expect(match.centsOffset, closeTo(0, 0.01));
+    });
+  });
+
   group('StringMatcher.identify - threshold and guards', () {
     test('maxMatchCents keeps a close match', () {
       final match = matcher.identify(82.41, maxMatchCents: 50);

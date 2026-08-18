@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linos/data/services/audio_input_service.dart';
+import 'package:linos/data/services/pitch_detection_service.dart';
 import 'package:linos/di/locator.dart';
 import 'package:linos/ui/core/linos_app.dart';
 import 'package:linos/ui/features/tuner/view_models/tuner_view_model.dart';
@@ -49,6 +50,12 @@ void main() {
     await locator.reset();
     fake = FakeAudioInputService();
     locator.registerSingleton<AudioInputService>(fake);
+    locator.registerSingleton<PitchDetectionService>(
+      PitchDetectionService(
+        audioInputService: fake,
+        useIsolate: false,
+      ),
+    );
     Locator.init();
   });
 

@@ -5,20 +5,23 @@ class DetectedFrequency {
     required this.frequency,
     required this.confidence,
     required this.rms,
+    this.snrDb = 0.0,
   });
 
   final Frequency frequency;
   final double confidence;
   final double rms;
+  final double snrDb;
 
   @override
   bool operator ==(Object other) {
     return other is DetectedFrequency &&
         other.frequency == frequency &&
         other.confidence == confidence &&
-        other.rms == rms;
+        other.rms == rms &&
+        other.snrDb == snrDb;
   }
 
   @override
-  int get hashCode => Object.hash(frequency, confidence, rms);
+  int get hashCode => Object.hash(frequency, confidence, rms, snrDb);
 }

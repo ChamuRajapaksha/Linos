@@ -17,6 +17,7 @@ abstract final class Locator {
       locator.registerLazySingleton<PitchDetectionService>(
         () => PitchDetectionService(
           audioInputService: locator<AudioInputService>(),
+          useIsolate: true,
         ),
       );
     }
