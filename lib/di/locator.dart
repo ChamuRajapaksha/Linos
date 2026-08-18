@@ -17,6 +17,8 @@ abstract final class Locator {
       locator.registerLazySingleton<PitchDetectionService>(
         () => PitchDetectionService(
           audioInputService: locator<AudioInputService>(),
+          // YIN on a compute isolate keeps the UI thread free during detection.
+          useIsolate: true,
         ),
       );
     }
