@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
 import 'audio_input_service.dart';
+import 'record_config_builder.dart';
 
 class AudioInputException implements Exception {
   AudioInputException(this.message, [this.cause]);
@@ -17,15 +18,33 @@ class AudioInputException implements Exception {
   String toString() => cause == null ? message : '$message: $cause';
 }
 
+/// Mic capture backed by the `record` plugin that prefers raw, unprocessed
+/// input and falls back across progressively less raw audio sources.
 class RecordAudioInputService implements AudioInputService {
-  RecordAudioInputService({AudioRecorder? recorder})
-      : _recorder = recorder ?? AudioRecorder();
+  RecordAudioInputService({
+    AudioRecorder? recorder,
+    this.sourceChain = const [
+      TunerAudioSource.unprocessed,
+      TunerAudioSource.voiceRecognition,
+      TunerAudioSource.mic,
+    ],
+    Future<Stream<Uint8List>> Function(RecordConfig config)?
+        startStreamOverride,
+  })  : _recorder = recorder ?? AudioRecorder(),
+        _startStreamOverride = startStreamOverride;
 
   final AudioRecorder _recorder;
+  final Iterable<TunerAudioSource> sourceChain;
+  final Future<Stream<Uint8List>> Function(RecordConfig config)?
+      _startStreamOverride;
   StreamController<List<double>> _controller =
       StreamController<List<double>>.broadcast();
   StreamSubscription<Uint8List>? _subscription;
   bool _isStreaming = false;
+  TunerAudioSource? _activeSource;
+
+  /// The source that successfully started, or null until [start] succeeds.
+  TunerAudioSource? get activeSource => _activeSource;
 
   @override
   Future<MicrophonePermissionState> checkPermission() async {
@@ -45,6 +64,7 @@ class RecordAudioInputService implements AudioInputService {
     if (_controller.isClosed) {
       _controller = StreamController<List<double>>.broadcast();
     }
+    _activeSource = null;
     try {
       final session = await AudioSession.instance;
       await session.configure(AudioSessionConfiguration(
@@ -54,17 +74,36 @@ class RecordAudioInputService implements AudioInputService {
             AVAudioSessionCategoryOptions.defaultToSpeaker,
         avAudioSessionMode: AVAudioSessionMode.measurement,
         androidAudioAttributes: AndroidAudioAttributes(
-          contentType: AndroidAudioContentType.speech,
+          contentType: AndroidAudioContentType.music,
           usage: AndroidAudioUsage.media,
         ),
         androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
         androidWillPauseWhenDucked: true,
       ));
-      final stream = await _recorder.startStream(const RecordConfig(
-        encoder: AudioEncoder.pcm16bits,
-        sampleRate: 44100,
-        numChannels: 1,
-      ));
+
+      final failures = <String>[];
+      Stream<Uint8List>? stream;
+      for (final source in sourceChain) {
+        final config = buildTunerRecordConfig(source: source);
+        try {
+          stream = await _startSource(source, config);
+          _activeSource = source;
+          break;
+        } catch (error) {
+          failures.add('${source.name}: $error');
+          // The record plugin keeps internal state; give it a clean slate
+          // before attempting the next source.
+          await _safeCancel();
+        }
+      }
+
+      if (stream == null) {
+        throw AudioInputException(
+          'Failed to start audio capture with any available source',
+          failures.join(' | '),
+        );
+      }
+
       _subscription = stream.listen(
         (bytes) => _controller.add(_convertPcm16ToDoubles(bytes)),
         onError: (Object error, StackTrace stackTrace) => _controller.addError(
@@ -77,6 +116,25 @@ class RecordAudioInputService implements AudioInputService {
       rethrow;
     } catch (error) {
       throw AudioInputException('Failed to start audio capture', error);
+    }
+  }
+
+  /// Starts a single source, honoring the test seam override when present.
+  Future<Stream<Uint8List>> _startSource(
+    TunerAudioSource source,
+    RecordConfig config,
+  ) {
+    if (_startStreamOverride != null) {
+      return _startStreamOverride(config);
+    }
+    return _recorder.startStream(config);
+  }
+
+  Future<void> _safeCancel() async {
+    try {
+      await _recorder.cancel();
+    } catch (_) {
+      // Best effort: a stale session should not block the fallback chain.
     }
   }
 
