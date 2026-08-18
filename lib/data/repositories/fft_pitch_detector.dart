@@ -4,6 +4,7 @@ import '../../domain/models/frequency.dart';
 import '../models/detected_frequency.dart';
 import 'pitch_detector.dart';
 
+/// FFT-based pitch detector with an optional Harmonic Product Spectrum mode.
 class FftPitchDetector implements PitchDetector {
   FftPitchDetector({this.config = const PitchDetectorConfig()}) {
     if (config.windowSize < 2) {
@@ -33,9 +34,28 @@ class FftPitchDetector implements PitchDetector {
     if (config.minRms < 0 || config.minRms > 1) {
       throw ArgumentError('minRms must be within [0, 1]');
     }
+    if (config.minSnrDb < 0) {
+      throw ArgumentError('minSnrDb must be non-negative');
+    }
+
+    _windowed = List<double>.filled(config.windowSize, 0);
+    _re = List<double>.filled(config.fftSize, 0);
+    _im = List<double>.filled(config.fftSize, 0);
+    _magnitudes = List<double>.filled((config.fftSize >> 1) + 1, 0);
   }
 
   final PitchDetectorConfig config;
+
+  // HPS multiplies the spectrum downsampled by factors 1..3, i.e. H^3.
+  // Order 4 was tried first: at the 4096-point default FFT a low detuned
+  // string's 4th partial can sit ~2 bins off its integer bin, which lets
+  // the octave-up (even-harmonic) candidate win. Order 3 stays aligned.
+  static const int hpsOrders = 3;
+
+  late final List<double> _windowed;
+  late final List<double> _re;
+  late final List<double> _im;
+  late final List<double> _magnitudes;
 
   @override
   DetectedFrequency? detect(List<double> samples) {
@@ -46,14 +66,12 @@ class FftPitchDetector implements PitchDetector {
       );
     }
 
-    final windowed = List<double>.filled(config.windowSize, 0);
     var sumOfSquares = 0.0;
     for (var i = 0; i < config.windowSize; i++) {
       final window = 0.5 *
-          (1 -
-              math.cos(2 * math.pi * i / (config.windowSize - 1)));
+          (1 - math.cos(2 * math.pi * i / (config.windowSize - 1)));
       final value = samples[i] * window;
-      windowed[i] = value;
+      _windowed[i] = value;
       sumOfSquares += value * value;
     }
 
@@ -62,7 +80,8 @@ class FftPitchDetector implements PitchDetector {
       return null;
     }
 
-    final spectrum = magnitudeSpectrum(windowed, config.fftSize);
+    _computeMagnitudes();
+
     final half = config.fftSize >> 1;
 
     final minBin = math.max(
@@ -75,32 +94,141 @@ class FftPitchDetector implements PitchDetector {
     );
 
     var peakBin = minBin;
-    var peakMagnitude = spectrum[peakBin];
-    var totalMagnitude = peakMagnitude;
-    for (var bin = minBin + 1; bin <= maxBin; bin++) {
-      totalMagnitude += spectrum[bin];
-      if (spectrum[bin] > peakMagnitude) {
-        peakMagnitude = spectrum[bin];
-        peakBin = bin;
+    if (config.useHps) {
+      final hpsMaxBin = math.min(maxBin, half ~/ hpsOrders);
+      if (hpsMaxBin < minBin) {
+        return null;
+      }
+      var bestScore = _hpsScore(minBin);
+      for (var bin = minBin + 1; bin <= hpsMaxBin; bin++) {
+        final score = _hpsScore(bin);
+        if (score > bestScore) {
+          bestScore = score;
+          peakBin = bin;
+        }
+      }
+    } else {
+      var peakMagnitude = _magnitudes[peakBin];
+      for (var bin = minBin + 1; bin <= maxBin; bin++) {
+        if (_magnitudes[bin] > peakMagnitude) {
+          peakMagnitude = _magnitudes[bin];
+          peakBin = bin;
+        }
       }
     }
 
+    final peakMagnitude = _magnitudes[peakBin];
+
+    var totalMagnitude = 0.0;
+    for (var bin = minBin; bin <= maxBin; bin++) {
+      totalMagnitude += _magnitudes[bin];
+    }
     if (totalMagnitude <= 0) {
       return null;
     }
-    final confidence = peakMagnitude / totalMagnitude;
+    // Zero-padding spreads each window-resolution bin across
+    // fftSize/windowSize FFT bins, which inflates the band sum. Normalizing
+    // the non-peak sum by that ratio keeps confidence independent of fftSize
+    // (equals the plain peak/total formula when windowSize == fftSize).
+    final restScale = config.windowSize / config.fftSize;
+    final restMagnitude = (totalMagnitude - peakMagnitude) * restScale;
+    final confidence = peakMagnitude / (peakMagnitude + restMagnitude);
     if (confidence < config.minConfidence) {
       return null;
     }
 
-    final refinedBin = _interpolatedBin(spectrum, peakBin, half);
+    // Noise-floor estimate: mean magnitude over the search band excluding a
+    // 3-bin band around the peak.
+    var noiseSum = 0.0;
+    var noiseCount = 0;
+    for (var bin = minBin; bin <= maxBin; bin++) {
+      if (bin >= peakBin - 3 && bin <= peakBin + 3) {
+        continue;
+      }
+      noiseSum += _magnitudes[bin];
+      noiseCount++;
+    }
+    final snrDb = (noiseCount == 0 || noiseSum <= 0)
+        ? 100.0
+        : 20 * math.log(peakMagnitude / (noiseSum / noiseCount)) / math.ln10;
+    if (snrDb < config.minSnrDb) {
+      return null;
+    }
+
+    final refinedBin = _interpolatedBin(_magnitudes, peakBin, half);
     final frequency = refinedBin * config.sampleRate / config.fftSize;
 
     return DetectedFrequency(
       frequency: Frequency(value: frequency),
       confidence: confidence,
       rms: rms,
+      snrDb: snrDb,
     );
+  }
+
+  double _hpsScore(int bin) {
+    var score = 0.0;
+    for (var order = 1; order <= hpsOrders; order++) {
+      final magnitude = _magnitudes[bin * order];
+      score += magnitude > 0 ? math.log(magnitude) : -1000.0;
+    }
+    return score;
+  }
+
+  void _computeMagnitudes() {
+    final fftSize = config.fftSize;
+    for (var i = 0; i < config.windowSize; i++) {
+      _re[i] = _windowed[i];
+    }
+    for (var i = config.windowSize; i < fftSize; i++) {
+      _re[i] = 0.0;
+    }
+    for (var i = 0; i < fftSize; i++) {
+      _im[i] = 0.0;
+    }
+
+    var j = 0;
+    for (var i = 0; i < fftSize - 1; i++) {
+      if (i < j) {
+        final tmpRe = _re[i];
+        _re[i] = _re[j];
+        _re[j] = tmpRe;
+        final tmpIm = _im[i];
+        _im[i] = _im[j];
+        _im[j] = tmpIm;
+      }
+      var m = fftSize >> 1;
+      while (j >= m && m >= 1) {
+        j -= m;
+        m >>= 1;
+      }
+      j += m;
+    }
+
+    for (var size = 2; size <= fftSize; size <<= 1) {
+      final half = size >> 1;
+      final step = -2 * math.pi / size;
+      for (var start = 0; start < fftSize; start += size) {
+        for (var k = 0; k < half; k++) {
+          final angle = step * k;
+          final cosA = math.cos(angle);
+          final sinA = math.sin(angle);
+          final even = start + k;
+          final odd = even + half;
+          final oddRe = _re[odd] * cosA - _im[odd] * sinA;
+          final oddIm = _re[odd] * sinA + _im[odd] * cosA;
+          _re[odd] = _re[even] - oddRe;
+          _im[odd] = _im[even] - oddIm;
+          _re[even] += oddRe;
+          _im[even] += oddIm;
+        }
+      }
+    }
+
+    final half = fftSize >> 1;
+    for (var i = 0; i <= half; i++) {
+      _magnitudes[i] = math.sqrt(_re[i] * _re[i] + _im[i] * _im[i]);
+    }
   }
 
   static double _interpolatedBin(List<double> spectrum, int peakBin, int half) {
