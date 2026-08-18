@@ -35,11 +35,17 @@ class StringMatch {
       Object.hash(stringIndex, targetNote, centsOffset, harmonic, status);
 }
 
+/// Matches detected frequencies to a string in the tuning, folding harmonic
+/// partials back to their fundamental. Folds up to the 4th harmonic (the
+/// default `maxHarmonic`) so, for
+/// example, a low-E reading captured at its 4th partial still resolves to the
+/// correct string. The tie-break prefers the lower harmonic, so a genuine
+/// high-E (329.63 Hz) still wins at harmonic 1 over low-E at harmonic 4.
 class StringMatcher {
   const StringMatcher({
     this.tuning = Tuning.standard,
     this.classifier = const TuningStatusClassifier(),
-    this.maxHarmonic = 3,
+    this.maxHarmonic = 4,
   }) : assert(maxHarmonic >= 1);
 
   final Tuning tuning;
