@@ -57,6 +57,7 @@ PitchDetectionService buildService(FakeAudioInputService audio) {
   );
 }
 
+/// Covers the detection service: buffering, gates, smoothing, isolate path.
 void main() {
   group('PitchDetectionService', () {
     test('detects A4 (440 Hz) from a sine fed in chunks', () async {
@@ -150,7 +151,7 @@ void main() {
       await service.start();
       expect(service.isRunning, isTrue);
 
-      audio.pushSamples(sine(440, 1024));
+      audio.pushSamples(sine(440, 3072));
       await pumpEventQueue();
       final countBeforeStop = detections.length;
       expect(countBeforeStop, greaterThan(0));
@@ -158,7 +159,7 @@ void main() {
       await service.stop();
       expect(service.isRunning, isFalse);
 
-      audio.pushSamples(sine(440, 1024));
+      audio.pushSamples(sine(440, 3072));
       await pumpEventQueue();
       expect(detections.length, countBeforeStop);
 
@@ -166,11 +167,123 @@ void main() {
       expect(service.isRunning, isTrue);
       final after = <PitchDetection>[];
       service.pitchStream.listen(after.add);
-      audio.pushSamples(sine(440, 1024));
+      audio.pushSamples(sine(440, 3072));
       await pumpEventQueue();
       expect(after, isNotEmpty);
 
       await service.stop();
     });
-  });
+
+    test('emits nothing until the smoother locks on three windows', () async {
+      final audio = FakeAudioInputService();
+      final service = buildService(audio);
+      final detections = <PitchDetection>[];
+      service.pitchStream.listen(detections.add);
+
+      await service.start();
+
+      final signal = sine(440, 4096);
+      // 3 chunks = 2 windows: lock-on needs 3 consistent windows.
+      for (var i = 0; i < 3; i++) {
+        audio.pushSamples(signal.sublist(i * 512, (i + 1) * 512));
+        await pumpEventQueue();
+      }
+      expect(detections, isEmpty);
+
+      // 3 more chunks complete the third window and lock-on.
+      for (var i = 3; i < 6; i++) {
+        audio.pushSamples(signal.sublist(i * 512, (i + 1) * 512));
+        await pumpEventQueue();
+      }
+      expect(detections, hasLength(3));
+      expect(detections.first.frequency.value, closeTo(440, 1.5));
+      expect(detections.first.note.label, 'A4');
+
+      await service.stop();
+    });
+
+    test('runs detection on a compute isolate end to end', () async {
+      final audio = FakeAudioInputService();
+      final service = PitchDetectionService(
+        audioInputService: audio,
+        useIsolate: true,
+      );
+      final detections = <PitchDetection>[];
+      service.pitchStream.listen(detections.add);
+
+      await service.start();
+
+final signal = sine(440, 16384);
+      for (var i = 0; i < signal.length; i += 512) {
+        audio.pushSamples(signal.sublist(i, i + 512));
+        await pumpEventQueue();
+      }
+      final deadline =
+          DateTime.now().add(const Duration(milliseconds: 5000));
+      while (service.pendingWorkerCount > 0 &&
+          DateTime.now().isBefore(deadline)) {
+        await pumpEventQueue();
+      }
+
+      expect(detections, isNotEmpty);
+      expect(detections.first.frequency.value, closeTo(440, 1.5));
+      expect(detections.first.note.label, 'A4');
+
+      await service.dispose();
+    });
+
+    test('caps in-flight worker windows under backpressure', () async {
+      final audio = FakeAudioInputService();
+      final service = PitchDetectionService(
+        audioInputService: audio,
+        useIsolate: true,
+        maxPendingWindows: 2,
+      );
+
+      await service.start();
+
+      // One giant chunk produces many windows in a single _onSamples call.
+      audio.pushSamples(sine(440, 4096 * 20));
+      for (var i = 0; i < 30; i++) {
+        await pumpEventQueue();
+      }
+
+      expect(service.pendingWorkerCount, lessThanOrEqualTo(2));
+
+      await service.dispose();
+    });
+
+    test('re-locks after sustained silence', () async {
+      final audio = FakeAudioInputService();
+      final service = buildService(audio);
+      final detections = <PitchDetection>[];
+      service.pitchStream.listen(detections.add);
+
+      await service.start();
+
+      final signal = sine(440, 4096);
+      for (var i = 0; i < 8; i++) {
+        audio.pushSamples(signal.sublist(i * 512, (i + 1) * 512));
+        await pumpEventQueue();
+      }
+      expect(detections, isNotEmpty);
+
+      // Silence beyond maxHeldFrames (15) releases the lock.
+      for (var i = 0; i < 20; i++) {
+        audio.pushSamples(List<double>.filled(512, 0));
+        await pumpEventQueue();
+      }
+      expect(service.smoother.isLocked, isFalse);
+
+      // A fresh burst re-locks and emits again.
+      final countBefore = detections.length;
+      for (var i = 0; i < 8; i++) {
+        audio.pushSamples(signal.sublist(i * 512, (i + 1) * 512));
+        await pumpEventQueue();
+      }
+      expect(detections.length, greaterThan(countBefore));
+
+      await service.stop();
+    });
+});
 }
