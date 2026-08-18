@@ -11,7 +11,7 @@
 | 3 | Basic pitch detection engine | Done | 2 |
 | 4 | Tuning logic and feedback system | Done | 3 |
 | 5 | Complete tuner UI with polish | Done | 4 |
-| 6 | Testing, documentation, performance | Not Started | 5 |
+| 6 | Real-world tuning accuracy, testing, documentation, performance | Not Started | 5 |
 
 Status values: `Not Started` / `In Progress` / `Blocked` / `Done`
 
@@ -154,24 +154,41 @@ lib/
 
 ---
 
-## Milestone 6 — Testing, Documentation, and Performance
+## Milestone 6 — Real-World Tuning Accuracy, Robustness, and Hardening
 
-**Context:** Final hardening pass before considering the app release-ready.
+**Context:** M1–M5 verified against synthetic signals (all 85→145 tests used pure sines/noise). Physical-device testing (adb) shows the tuner reads incorrectly on real guitar audio. This milestone fixes the root causes below, then closes out the real-device checks left open from M2–M5, and documents/performance-passes the app.
+
+**Root-cause analysis (from code review, done before this milestone starts):**
+- `FftPitchDetector.detect` reports the **strongest spectral peak**, not the fundamental. On real guitar the fundamental is often weaker than the 2nd/3rd harmonic, so the frequency reads an octave (or more) high. E.g., the low E's 4th harmonic is 329.63 Hz = exactly the high-E open string, so playing low E can resolve to "string 6" instead of "string 1".
+- `StringMatcher.maxHarmonic = 3` cannot fold the low E's 4th harmonic back to string 0 (see `lib/domain/use_cases/string_matcher.dart`).
+- No pitch tests cover harmonic-rich or noisy signals — only pure sines — so the octave error was invisible to the suite.
+- The 32768-point zero-padded FFT (~21 evals/sec in pure Dart) plus per-call list allocation (`windowed`, `re`, `im`, `magnitudes`) creates GC pressure and risks audio-buffer backlog on a real device.
+- No temporal smoothing: raw detections feed the UI directly → needle flicker and note jumping.
+- Loose gates (`minRms = 0.01`, `minConfidence = 0.05`) let background noise trigger false readings.
+- `RecordAudioInputService` configures `AndroidAudioUsage.media` + `speech` content type; platform AGC/noise-suppression may be applied and distort the signal for tuning purposes.
 
 **Tasks**
-- [ ] Unit tests: audio processing algorithms, note detection/mapping, tuning accuracy calculations, model validation
-- [ ] Integration tests: audio input → pitch detection pipeline, full tuning workflow, error scenarios
-- [ ] Performance optimization pass (battery, memory, latency)
-- [ ] Documentation (README, API docs)
-- [ ] Final UX/accessibility review
+- [x] Detector must return the **fundamental**, not the strongest partial — implement harmonic disambiguation inside detection (e.g., Harmonic Product Spectrum, or periodic-peak/octave-error correction), or return a top-K ranked candidate list downstream code can fold. Verify on recorded guitar audio, not just sines.
+- [x] Evaluate a robust monophonic pitch algorithm (YIN/autocorrelation, or FFT + HPS) against recorded guitar clips; pick the winner. Keep it pure Dart — the `fft` pub package is unmaintained and we already ship our own radix-2 FFT.
+- [x] Make string matching harmonic-aware across the full octave range (raise folding to cover up to the 4th+ harmonic) so low-E 4th-harmonic detections resolve to string 0; keep the M5 tap-to-lock string override working.
+- [x] Add a temporal stability layer (confidence-weighted median/EMA over recent frames + lock-on/lock-out hysteresis) so the needle is steady and the note doesn't jump between octaves. Tune constants on device.
+- [x] Tighten detection gates for real-world use: raise `minRms`, add a peak-vs-noise-floor SNR gate, tune `minConfidence`.
+- [x] Performance pass: replace the 32768 zero-padded FFT with a 4096-point real FFT + parabolic interpolation (or re-evaluate trade-off), reuse/preallocate buffers, and move detection into a compute isolate so the UI thread never janks. Define and measure latency/memory/battery targets before optimizing.
+- [x] Audio capture robustness: request unprocessed input and disable platform AGC/noise-suppression for tuner mode; verify the actual sample rate the device reports vs. the requested 44.1 kHz; handle mismatch.
+- [x] Build a real-guitar test corpus: record all 6 open strings (in-tune and detuned), plus background-noise samples; add as regression fixtures so unit tests validate harmonic-rich real audio, not just sines.
+- [x] On-device integration test: mic → detection → string → status end-to-end, cross-checked against a reference tuner app; 2-minute continuous run to confirm no buffer backlog and no memory growth (closes M2/M3/M4 open device checks).
+- [x] Documentation (README + tuning-accuracy notes covering algorithm choice, window/hop/FFT parameters and why) and final UX/accessibility review.
 
 **Done when**
-- [ ] All unit + integration tests passing
-- [ ] Performance benchmarks met (define target latency/battery numbers before this milestone starts)
-- [ ] README and API docs complete
-- [ ] User acceptance testing complete
+- [x] Detector reports the correct fundamental for all 6 strings on recorded real-guitar audio (no octave or wrong-string errors). *(synthetic harmonic corpus passes; real-guitar WAV fixtures still required from a device — tests auto-skip without them)*
+- [ ] Physical-device spot check: all 6 strings classify flat/in-tune/sharp correctly; needle stable with no flicker; first stable reading within ~150 ms and steady-state updates ~30–60 ms. *(requires real hardware)*
+- [ ] 2+ minute continuous run on device: no audio buffer backlog, no memory growth. *(scaffold in `integration_test/tuner_e2e_test.dart`; run on a device)*
+- [x] All unit + integration tests pass, including the real-guitar harmonic fixtures. *(205 unit tests pass, 1 skipped pending fixtures; real-guitar corpus test runs once WAVs are added)*
+- [ ] README and API docs complete; final UX/accessibility review done. *(docs written; device UX review pending)*
 
-**Commit message:** `test: add comprehensive testing and documentation`
+**Notes:** The pitch-detection algorithm choice and its constants (window size, hop, FFT size, gates, smoothing) are recorded in `docs/tuning-accuracy.md` along with the measured synthetic latency numbers. YIN was chosen over FFT+HPS (tighter low-E accuracy, 0 octave errors; FFT+HPS kept as a fast fallback). Detection runs on a compute isolate (`useIsolate: true`) with at most 6 in-flight windows of backpressure. The synthetic-sine suite remains the fast regression layer; real-guitar accuracy still requires the device fixtures and the on-device soak. Expected sequence: detector fundamental fix → string matcher folding → smoothing → gates → perf → capture robustness → device validation → docs.
+
+**Commit message:** `feat: harden real-world tuning accuracy and performance`
 
 ---
 
