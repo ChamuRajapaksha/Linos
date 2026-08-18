@@ -1,5 +1,5 @@
 name: linos
-description: "Linos — a guitar tuner app. Tune your instrument with real-time pitch detection."
+description: "Linos — a guitar tuner app with real-time, YIN-based pitch detection."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -18,6 +18,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  integration_test:
+    sdk: flutter
 
 flutter:
   uses-material-design: true
