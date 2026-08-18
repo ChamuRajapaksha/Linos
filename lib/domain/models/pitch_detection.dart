@@ -8,6 +8,7 @@ class PitchDetection {
     required this.centsOffset,
     required this.confidence,
     required this.rms,
+    this.snrDb = 0.0,
   });
 
   final Frequency frequency;
@@ -16,6 +17,9 @@ class PitchDetection {
   final double confidence;
   final double rms;
 
+  /// Peak-vs-noise-floor ratio in dB for the window that produced this reading.
+  final double snrDb;
+
   @override
   bool operator ==(Object other) {
     return other is PitchDetection &&
@@ -23,10 +27,11 @@ class PitchDetection {
         other.note == note &&
         other.centsOffset == centsOffset &&
         other.confidence == confidence &&
-        other.rms == rms;
+        other.rms == rms &&
+        other.snrDb == snrDb;
   }
 
   @override
   int get hashCode =>
-      Object.hash(frequency, note, centsOffset, confidence, rms);
+      Object.hash(frequency, note, centsOffset, confidence, rms, snrDb);
 }
