@@ -4,7 +4,7 @@ A real-time guitar tuner built with Flutter. Listen to your instrument through t
 
 ## Status
 
-Core architecture, audio input, permissions, pitch detection, tuning logic, the full tuner UI, and real-world accuracy hardening are in place. The unit suite (205 tests + 1 skipped) covers synthetic signals, a harmonic-rich guitar corpus, the detection service, audio-capture robustness, and smoothing. Remaining work is on-device verification with a real guitar and a reference tuner (see [docs/tuning-accuracy.md](docs/tuning-accuracy.md)).
+Core architecture, audio input, permissions, pitch detection, tuning logic, the full tuner UI, and real-world accuracy hardening are in place. The unit suite (206 tests + 2 skipped by default) covers synthetic signals, a harmonic-rich guitar corpus, the detection service, audio-capture robustness, and smoothing. A headless 2-minute soak (pumped with synthetic guitar audio through the production isolate pipeline) verifies no memory growth or buffer backlog. Remaining work is on-device verification with a real guitar and a reference tuner (see [docs/tuning-accuracy.md](docs/tuning-accuracy.md)).
 
 | Milestone | Status |
 |-----------|--------|
@@ -79,7 +79,8 @@ flutter build ios            # iOS (requires macOS)
 ### Tests
 
 ```sh
-flutter test                                    # unit suite
+flutter test                                    # unit suite (soak skipped)
+flutter test --tags soak --dart-define=RUN_SOAK=true  # headless 2-minute soak
 flutter test integration_test/tuner_e2e_test.dart -d <device>  # on-device soak
 ```
 
@@ -92,7 +93,7 @@ flutter test integration_test/tuner_e2e_test.dart -d <device>  # on-device soak
 
 Remaining work, per the build plan in `.agents/plans/project-planner.md`:
 
-- On-device verification: real-guitar tuning flow cross-checked against a reference tuner, 2-minute soak run, and real-guitar WAV fixtures for the unit corpus (see `docs/tuning-accuracy.md`)
+- On-device verification: real-guitar tuning flow cross-checked against a reference tuner, an on-device 2-minute soak run, and real-guitar WAV fixtures for the unit corpus (see `docs/tuning-accuracy.md`) — the headless soak (`flutter test --tags soak --dart-define=RUN_SOAK=true`) already covers the continuous-run/memory-growth check on the VM
 - Final UX/accessibility review on physical hardware
 
 ## Out of Scope

@@ -111,9 +111,15 @@ re-run the comparison corpus.
 
 ## Device verification checklist
 
-Run the on-device integration test (`integration_test/tuner_e2e_test.dart`,
-2-minute soak: no errors, bounded buffer, ≤ 32 MB RSS growth) and cross-check
-each open string against a reference tuner app:
+A headless 2-minute soak (`flutter test --tags soak --dart-define=RUN_SOAK=true`,
+see `test/data/services/pitch_detection_service_soak_test.dart`) already covers
+the continuous-run/backlog/memory-growth check on the VM: it pumps synthetic
+harmonic-rich guitar audio through the production isolate pipeline and asserts
+no errors, a bounded sample buffer, the in-flight window cap, and ≤ 32 MiB RSS
+growth over 2 real minutes (measured ~3 MiB). The on-device soak below
+(`integration_test/tuner_e2e_test.dart`) is still required to validate real
+mic audio, the unprocessed-source fallback, and the actual sample rate, and to
+cross-check each open string against a reference tuner app:
 
 1. All six strings classify flat/in-tune/sharp correctly (no octave or
    wrong-string errors).

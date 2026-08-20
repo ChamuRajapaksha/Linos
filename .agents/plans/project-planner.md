@@ -102,7 +102,7 @@ lib/
 **Done when**
 - [x] Known test tones (e.g., a tone generator or reference recordings) are detected within acceptable Hz tolerance
 - [x] Low E (~82 Hz) and high E (~330 Hz) both detect correctly — low frequencies are the usual failure point
-- [ ] Detection loop runs continuously without memory growth over a 2+ minute session
+- [x] Detection loop runs continuously without memory growth over a 2+ minute session *(headless soak: `flutter test --tags soak --dart-define=RUN_SOAK=true` — pumps synthetic guitar audio through the production isolate pipeline for 2 real minutes; asserts no errors, bounded buffer, in-flight cap, ≤32 MiB RSS growth (~3 MiB measured); see `test/data/services/pitch_detection_service_soak_test.dart`. The M6 on-device soak still validates real mic audio.)*
 
 **Commit message:** `feat: implement basic pitch detection engine`
 
@@ -182,7 +182,7 @@ lib/
 **Done when**
 - [x] Detector reports the correct fundamental for all 6 strings on recorded real-guitar audio (no octave or wrong-string errors). *(synthetic harmonic corpus passes; real-guitar WAV fixtures still required from a device — tests auto-skip without them)*
 - [ ] Physical-device spot check: all 6 strings classify flat/in-tune/sharp correctly; needle stable with no flicker; first stable reading within ~150 ms and steady-state updates ~30–60 ms. *(requires real hardware)*
-- [ ] 2+ minute continuous run on device: no audio buffer backlog, no memory growth. *(scaffold in `integration_test/tuner_e2e_test.dart`; run on a device)*
+- [ ] 2+ minute continuous run on device: no audio buffer backlog, no memory growth. *(scaffold in `integration_test/tuner_e2e_test.dart`; run on a device — the VM-side check is covered by the headless soak, see M3 done-when)*
 - [x] All unit + integration tests pass, including the real-guitar harmonic fixtures. *(205 unit tests pass, 1 skipped pending fixtures; real-guitar corpus test runs once WAVs are added)*
 - [ ] README and API docs complete; final UX/accessibility review done. *(docs written; device UX review pending)*
 
