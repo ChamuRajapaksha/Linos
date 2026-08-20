@@ -122,8 +122,10 @@ class IsolatePitchDetector {
       return;
     }
     final result = message[1];
-    if (result is DetectedFrequency) {
-      completer.complete(result);
+    if (result is DetectedFrequency || result == null) {
+      // `null` is a valid no-detection result (e.g. silence gated out by the
+      // detector), not a worker failure.
+      completer.complete(result as DetectedFrequency?);
     } else {
       completer.completeError(StateError('Detector failed: $result'));
     }

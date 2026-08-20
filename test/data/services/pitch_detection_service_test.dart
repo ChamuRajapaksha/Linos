@@ -1,38 +1,12 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linos/data/repositories/fft_pitch_detector.dart';
 import 'package:linos/data/repositories/pitch_detector.dart';
-import 'package:linos/data/services/audio_input_service.dart';
 import 'package:linos/data/services/pitch_detection_service.dart';
 import 'package:linos/domain/models/pitch_detection.dart';
 
-class FakeAudioInputService implements AudioInputService {
-  final StreamController<List<double>> _controller =
-      StreamController<List<double>>.broadcast();
-
-  @override
-  Stream<List<double>> get audioSamples => _controller.stream;
-
-  @override
-  Future<MicrophonePermissionState> checkPermission() async =>
-      MicrophonePermissionState.granted;
-
-  @override
-  Future<MicrophonePermissionState> requestPermission() async =>
-      MicrophonePermissionState.granted;
-
-  @override
-  Future<void> start() async {}
-
-  @override
-  Future<void> stop() async {}
-
-  void pushSamples(List<double> samples) {
-    _controller.add(samples);
-  }
-}
+import '../../helpers/fake_audio_input_service.dart';
 
 List<double> sine(double freq, int count, {double amplitude = 0.5}) {
   const int sampleRate = 44100;

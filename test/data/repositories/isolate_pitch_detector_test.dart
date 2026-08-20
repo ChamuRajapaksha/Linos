@@ -46,6 +46,19 @@ void main() {
       });
     }
 
+    test('silence resolves to null, not a worker error', () async {
+      for (final kind in DetectorKind.values) {
+        final detector = IsolatePitchDetector(kind: kind, config: config);
+
+        final result = await detector.detect(
+          List<double>.filled(config.windowSize, 0),
+        );
+        expect(result, isNull, reason: 'gated-out silence is a no-detection');
+
+        await detector.dispose();
+      }
+    });
+
     test('pendingCount reflects in-flight detections', () async {
       final detector = IsolatePitchDetector(
         kind: DetectorKind.yin,
