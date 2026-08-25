@@ -10,7 +10,7 @@ class TuningPreset {
 
   final String id;
   final String name;
-  final List<Note> notes;
+  final List<Note> notes; // open-string notes, frequencies referenced to A4 = 440
 
   static final TuningPreset standard = TuningPreset(
     id: 'standard',
@@ -18,8 +18,36 @@ class TuningPreset {
     notes: Tuning.standard.notes,
   );
 
+  static final TuningPreset dropD = TuningPreset(
+    id: 'drop-d',
+    name: 'Drop D',
+    notes: [
+      Note(name: 'D', octave: 2, frequency: Note.frequencyFor('D', 2)),
+      Note(name: 'A', octave: 2, frequency: Note.frequencyFor('A', 2)),
+      Note(name: 'D', octave: 3, frequency: Note.frequencyFor('D', 3)),
+      Note(name: 'G', octave: 3, frequency: Note.frequencyFor('G', 3)),
+      Note(name: 'B', octave: 3, frequency: Note.frequencyFor('B', 3)),
+      Note(name: 'E', octave: 4, frequency: Note.frequencyFor('E', 4)),
+    ],
+  );
+
+  static final TuningPreset halfStepDown = TuningPreset(
+    id: 'half-step-down',
+    name: 'Half-Step Down',
+    notes: [
+      Note(name: 'D#', octave: 2, frequency: Note.frequencyFor('D#', 2)),
+      Note(name: 'G#', octave: 2, frequency: Note.frequencyFor('G#', 2)),
+      Note(name: 'C#', octave: 3, frequency: Note.frequencyFor('C#', 3)),
+      Note(name: 'F#', octave: 3, frequency: Note.frequencyFor('F#', 3)),
+      Note(name: 'A#', octave: 3, frequency: Note.frequencyFor('A#', 3)),
+      Note(name: 'D#', octave: 4, frequency: Note.frequencyFor('D#', 4)),
+    ],
+  );
+
   static final List<TuningPreset> all = [
     standard,
+    dropD,
+    halfStepDown,
   ];
 
   static TuningPreset? byId(String id) {

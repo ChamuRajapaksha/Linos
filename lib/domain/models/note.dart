@@ -1,3 +1,5 @@
+import 'dart:math' show pow;
+
 class Note {
   const Note({
     required this.name,
@@ -29,6 +31,15 @@ class Note {
   int get midiNumber {
     final semitone = chromaticNotes.indexOf(name);
     return (octave + 1) * 12 + semitone;
+  }
+
+  static double frequencyFor(
+    String name,
+    int octave, {
+    double a4Reference = Note.a4Reference,
+  }) {
+    final midi = (octave + 1) * 12 + chromaticNotes.indexOf(name);
+    return a4Reference * pow(2, (midi - 69) / 12);
   }
 
   String get label => '$name$octave';
