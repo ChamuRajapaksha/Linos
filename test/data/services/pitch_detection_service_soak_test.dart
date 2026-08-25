@@ -25,7 +25,7 @@ import '../../helpers/guitar_signal.dart';
 ///   flutter test --tags soak --dart-define=RUN_SOAK=true
 ///
 /// Skipped by default (it runs for a full 2 minutes) unless `RUN_SOAK` is set.
-const bool _runSoak = const bool.fromEnvironment('RUN_SOAK');
+const bool _runSoak = bool.fromEnvironment('RUN_SOAK');
 
 void main() {
   test(
