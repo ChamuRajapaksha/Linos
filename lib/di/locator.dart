@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 
+import '../data/repositories/tuning_repository.dart';
 import '../data/services/audio_input_service.dart';
 import '../data/services/pitch_detection_service.dart';
 import '../data/services/record_audio_input_service.dart';
@@ -24,6 +25,9 @@ abstract final class Locator {
     }
     if (!locator.isRegistered<StringMatcher>()) {
       locator.registerLazySingleton<StringMatcher>(StringMatcher.new);
+    }
+    if (!locator.isRegistered<TuningRepository>()) {
+      locator.registerLazySingleton<TuningRepository>(TuningRepository.new);
     }
     if (!locator.isRegistered<TunerViewModel>()) {
       locator.registerLazySingleton<TunerViewModel>(
