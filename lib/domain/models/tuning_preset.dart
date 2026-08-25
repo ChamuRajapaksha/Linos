@@ -83,6 +83,19 @@ class TuningPreset {
     ],
   );
 
+  static final TuningPreset dadgad = TuningPreset(
+    id: 'dadgad',
+    name: 'DADGAD',
+    notes: [
+      Note(name: 'D', octave: 2, frequency: Note.frequencyFor('D', 2)),
+      Note(name: 'A', octave: 2, frequency: Note.frequencyFor('A', 2)),
+      Note(name: 'D', octave: 3, frequency: Note.frequencyFor('D', 3)),
+      Note(name: 'G', octave: 3, frequency: Note.frequencyFor('G', 3)),
+      Note(name: 'A', octave: 3, frequency: Note.frequencyFor('A', 3)),
+      Note(name: 'D', octave: 4, frequency: Note.frequencyFor('D', 4)),
+    ],
+  );
+
   static final List<TuningPreset> all = [
     standard,
     dropD,
@@ -90,6 +103,7 @@ class TuningPreset {
     openG,
     openD,
     openE,
+    dadgad,
   ];
 
   static TuningPreset? byId(String id) {
