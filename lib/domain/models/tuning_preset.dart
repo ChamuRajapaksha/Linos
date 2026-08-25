@@ -44,10 +44,52 @@ class TuningPreset {
     ],
   );
 
+  static final TuningPreset openG = TuningPreset(
+    id: 'open-g',
+    name: 'Open G',
+    notes: [
+      Note(name: 'D', octave: 2, frequency: Note.frequencyFor('D', 2)),
+      Note(name: 'G', octave: 2, frequency: Note.frequencyFor('G', 2)),
+      Note(name: 'D', octave: 3, frequency: Note.frequencyFor('D', 3)),
+      Note(name: 'G', octave: 3, frequency: Note.frequencyFor('G', 3)),
+      Note(name: 'B', octave: 3, frequency: Note.frequencyFor('B', 3)),
+      Note(name: 'D', octave: 4, frequency: Note.frequencyFor('D', 4)),
+    ],
+  );
+
+  static final TuningPreset openD = TuningPreset(
+    id: 'open-d',
+    name: 'Open D',
+    notes: [
+      Note(name: 'D', octave: 2, frequency: Note.frequencyFor('D', 2)),
+      Note(name: 'A', octave: 2, frequency: Note.frequencyFor('A', 2)),
+      Note(name: 'D', octave: 3, frequency: Note.frequencyFor('D', 3)),
+      Note(name: 'F#', octave: 3, frequency: Note.frequencyFor('F#', 3)),
+      Note(name: 'A', octave: 3, frequency: Note.frequencyFor('A', 3)),
+      Note(name: 'D', octave: 4, frequency: Note.frequencyFor('D', 4)),
+    ],
+  );
+
+  static final TuningPreset openE = TuningPreset(
+    id: 'open-e',
+    name: 'Open E',
+    notes: [
+      Note(name: 'E', octave: 2, frequency: Note.frequencyFor('E', 2)),
+      Note(name: 'B', octave: 2, frequency: Note.frequencyFor('B', 2)),
+      Note(name: 'E', octave: 3, frequency: Note.frequencyFor('E', 3)),
+      Note(name: 'G#', octave: 3, frequency: Note.frequencyFor('G#', 3)),
+      Note(name: 'B', octave: 3, frequency: Note.frequencyFor('B', 3)),
+      Note(name: 'E', octave: 4, frequency: Note.frequencyFor('E', 4)),
+    ],
+  );
+
   static final List<TuningPreset> all = [
     standard,
     dropD,
     halfStepDown,
+    openG,
+    openD,
+    openE,
   ];
 
   static TuningPreset? byId(String id) {
