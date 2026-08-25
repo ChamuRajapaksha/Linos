@@ -115,6 +115,21 @@ class TuningPreset {
     return null;
   }
 
+  Tuning tuningFor(double a4Reference) {
+    final ratio = a4Reference / Note.a4Reference;
+    return Tuning(
+      name: name,
+      notes: [
+        for (final note in notes)
+          Note(
+            name: note.name,
+            octave: note.octave,
+            frequency: note.frequency * ratio,
+          ),
+      ],
+    );
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) {
