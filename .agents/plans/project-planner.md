@@ -1,6 +1,10 @@
 # Linos App — Build Plan
 
 > Planner file for the builder agent. Update checkboxes and the status table as milestones complete. Do not remove completed items — mark them `[x]` for an audit trail. Each milestone is self-contained: read its Context + Tasks + Done When before starting work.
+>
+> **Milestone sizing note:** Milestones 7–11 (alternate tunings) are deliberately split into small, narrow-scope units instead of one large "alternate tunings" milestone. Each one touches one layer (data model, matching, UI, custom tunings, validation) so a builder agent can load just that milestone's context, plus the specific files it names, without needing the full history of prior milestones to make progress. Don't merge them back together even if they look small — the split is intentional.
+>
+> **Commit granularity note:** Within milestones 7–11, each task lists its own commit message (marked with →) — commit after finishing that task, not at the end of the milestone. This keeps diffs small and gives clean rollback points if a later task in the same milestone goes wrong. The "Wrap-up commit" at the end of each milestone is a fallback only, for whoever skipped the per-task commits.
 
 ## Status
 
@@ -12,6 +16,11 @@
 | 4 | Tuning logic and feedback system | Done | 3 |
 | 5 | Complete tuner UI with polish | Done | 4 |
 | 6 | Real-world tuning accuracy, testing, documentation, performance | Not Started | 5 |
+| 7 | Alternate tuning data model & presets | Not Started | 6 |
+| 8 | Tuning-aware string matching & detection | Not Started | 7 |
+| 9 | Alternate tuning selection UI | Not Started | 8 |
+| 10 | Custom tuning support | Not Started | 9 |
+| 11 | Real-world validation & docs for alternate tunings | Not Started | 9 (10 if built) |
 
 Status values: `Not Started` / `In Progress` / `Blocked` / `Done`
 
@@ -192,15 +201,165 @@ lib/
 
 ---
 
+## Milestone 7 — Alternate Tuning Data Model & Presets
+
+**Context:** Depends on M6 (a correct, hardened standard-tuning pipeline is the foundation everything else here builds on — don't start this while M6's real-device checks are still open). Pure data-layer work: no changes to matching, detection, or UI. Scope is deliberately narrow so this milestone can be picked up on its own.
+
+**Tasks** *(commit after each one — don't batch)*
+- [x] Introduce a `TuningPreset` concept (or extend `Tuning`) that can represent any ordered set of open-string notes, not just standard EADGBE
+  → `feat(tuning-model): add TuningPreset type for arbitrary string sets`
+- [x] Add Drop D and Half-Step Down presets (single-string / uniform-shift changes from standard — lowest risk, good first presets)
+  → `feat(tuning-model): add Drop D and Half-Step Down presets`
+- [x] Add Open G, Open D, and Open E presets
+  → `feat(tuning-model): add Open G, Open D, Open E presets`
+- [x] Add DADGAD preset
+  → `feat(tuning-model): add DADGAD preset`
+- [x] Ensure presets rescale correctly with the existing A4 reference-pitch setting (438/440/442 Hz from M5) — no hardcoded 440 Hz frequencies
+  → `feat(tuning-model): rescale presets against configurable A4`
+- [ ] Add a `TuningRepository` (or extend the existing one) to list all presets and look one up by id
+  → `feat(tuning-model): add TuningRepository for preset lookup`
+- [ ] Persist "last selected tuning id" via existing local-storage mechanism (no UI yet — just the persistence layer)
+  → `feat(tuning-model): persist last-selected tuning id`
+- [ ] Unit tests: string count, note names, and frequencies correct for every preset at all three A4 settings
+  → `test(tuning-model): cover presets across A4 settings`
+
+**Done when**
+- [ ] Every preset compiles and exposes the correct number of strings with correct notes
+- [ ] Frequencies are verified correct at all three A4 settings for every preset (unit tests, synthetic — no device needed)
+- [ ] No existing standard-tuning behavior, matching, or UI is touched or regressed
+
+**Wrap-up commit (only if the tasks above weren't committed individually):** `feat: add alternate tuning data model and presets`
+
+**Notes:** Keep this milestone to the `data/` and `domain/models/` layers only. If you find yourself editing `StringMatcher` or any UI file, stop — that work belongs in M8/M9. Presets are ordered easiest-to-verify first (uniform shifts) to hardest (DADGAD's non-uniform intervals), so an early failure is cheap to isolate.
+
+---
+
+## Milestone 8 — Tuning-Aware String Matching & Detection
+
+**Context:** Depends on M7's presets existing. `StringMatcher` and `TuningStatusClassifier` currently assume standard EADGBE. This milestone generalizes them to operate against whichever `Tuning` is active, and re-derives the harmonic-folding ranges M6 tuned specifically for standard tuning. Detection internals (FFT/YIN, smoothing, gates) from M6 are **not** touched here.
+
+**Tasks** *(commit after each one — don't batch)*
+- [ ] Generalize `StringMatcher` to accept any `Tuning`/`TuningPreset` (from M7) instead of assuming `Tuning.standard`
+  → `refactor(string-matcher): accept arbitrary Tuning instead of hardcoded standard`
+- [ ] Regression-test that standard tuning still matches identically after the refactor, before touching anything else
+  → `test(string-matcher): pin standard-tuning regression before generalizing folding`
+- [ ] Re-derive harmonic-folding ranges for Drop D / Half-Step Down (uniform or near-uniform shifts from standard — smallest change to reason about)
+  → `feat(string-matcher): harmonic folding for Drop D and Half-Step Down`
+- [ ] Re-derive harmonic-folding ranges for the open tunings (Open G, Open D, Open E)
+  → `feat(string-matcher): harmonic folding for open tunings`
+- [ ] Re-derive harmonic-folding ranges for DADGAD
+  → `feat(string-matcher): harmonic folding for DADGAD`
+- [ ] Thread the active tuning through `TuningStatusClassifier` so flat/in-tune/sharp is computed against the correct preset's target notes
+  → `feat(tuning-status): classify against active tuning, not standard only`
+- [ ] Preserve the M5 tap-to-lock single-string override for every preset
+  → `fix(string-matcher): keep tap-to-lock override working across tunings`
+- [ ] Unit tests: harmonic-rich synthetic signals (per M6's pattern, not pure sines) for every preset's open strings, including detuned and harmonic-only cases
+  → `test(string-matcher): harmonic-rich coverage for all presets`
+
+**Done when**
+- [ ] Unit tests (synthetic, following the M6 harmonic-rich-signal pattern — not just pure sines) pass string identification for every preset's open strings, including detuned and harmonic-only cases
+- [ ] Standard-tuning tests from M4/M6 still pass unchanged (regression check)
+
+**Wrap-up commit (only if the tasks above weren't committed individually):** `feat: generalize string matching and status across tunings`
+
+**Notes:** This milestone should not need to open `pitch_detection_service.dart` or the FFT/YIN files at all — if it does, the scope has drifted into M6 territory and should be reconsidered.
+
+---
+
+## Milestone 9 — Alternate Tuning Selection UI
+
+**Context:** Depends on M8. Adds the user-facing way to switch tunings; everything underneath already works by this point.
+
+**Tasks** *(commit after each one — don't batch)*
+- [ ] Build the tuning picker UI shell (bottom sheet or settings screen) listing presets from M7, no wiring yet
+  → `feat(tuning-ui): add tuning picker shell listing presets`
+- [ ] Wire the picker's selection into the tuner `ViewModel`
+  → `feat(tuning-ui): wire tuning selection into ViewModel`
+- [ ] Re-render the string rail (from M5) with the new preset's labels/order on selection
+  → `feat(tuning-ui): re-render string rail on tuning change`
+- [ ] Confirm matching/status (M8) responds live to the new selection, no restart required
+  → `test(tuning-ui): verify live matching update on tuning switch`
+- [ ] Persist the selected tuning across app restarts (via the M7 persistence hook)
+  → `feat(tuning-ui): persist selected tuning across restarts`
+- [ ] Show the currently active tuning name on the main tuner screen
+  → `feat(tuning-ui): show active tuning name on tuner screen`
+- [ ] Accessibility labels for the picker and the active-tuning indicator
+  → `feat(tuning-ui): accessibility labels for picker and indicator`
+
+**Done when**
+- [ ] Switching tuning updates string rail, matching, and status live, with no restart required
+- [ ] Selection persists after a full app restart
+- [ ] Accessibility pass done for the new UI surfaces
+- [ ] `flutter analyze` clean, existing test suite still passing
+
+**Wrap-up commit (only if the tasks above weren't committed individually):** `feat: add alternate tuning selection UI`
+
+---
+
+## Milestone 10 — Custom Tuning Support
+
+**Context:** Depends on M9. Stretch scope beyond the fixed preset list — lets a player define an arbitrary tuning. Skip or defer this milestone if alternate tunings only need to ship with the fixed preset list from M7.
+
+**Tasks** *(commit after each one — don't batch)*
+- [ ] UI to set a custom note + octave per string, reusing an existing note-picker component if one exists
+  → `feat(custom-tuning): add per-string note entry UI`
+- [ ] Validate entries (frequency range sanity, no duplicate/invalid strings)
+  → `feat(custom-tuning): validate custom string entries`
+- [ ] Save and name a custom tuning locally, alongside the built-in presets from the M9 picker
+  → `feat(custom-tuning): save and name custom tunings`
+- [ ] Delete a saved custom tuning
+  → `feat(custom-tuning): delete saved custom tunings`
+- [ ] Feed a custom tuning through the same M8 matching/classification pipeline with no special-casing
+  → `feat(custom-tuning): route custom tunings through standard matching pipeline`
+- [ ] Unit tests: create/save/select/delete a custom tuning end-to-end at the data layer
+  → `test(custom-tuning): cover create/save/select/delete lifecycle`
+
+**Done when**
+- [ ] A user can create, save, select, and delete a custom tuning entirely from the UI
+- [ ] A custom tuning behaves identically to a built-in preset for matching, status, and persistence
+
+**Wrap-up commit (only if the tasks above weren't committed individually):** `feat: support user-defined custom tunings`
+
+---
+
+## Milestone 11 — Real-World Validation & Documentation for Alternate Tunings
+
+**Context:** Depends on M9 (and M10 if it was built). Mirrors M6's device-validation rigor, scoped to non-standard tunings only — this closes out alternate-tuning work rather than re-litigating standard-tuning accuracy.
+
+**Tasks** *(commit after each one — don't batch)*
+- [ ] Record a real-guitar test corpus for Drop D (in-tune + several detuned takes), plus background noise
+  → `test(alt-tuning-corpus): add Drop D real-guitar fixtures`
+- [ ] Record a real-guitar test corpus for at least one open tuning (in-tune + detuned takes)
+  → `test(alt-tuning-corpus): add open-tuning real-guitar fixtures`
+- [ ] Wire the new fixtures into regression tests alongside the M6 real-guitar corpus
+  → `test(alt-tuning-corpus): run alternate-tuning fixtures in regression suite`
+- [ ] On-device spot check across all shipped presets: string identification and flat/in-tune/sharp classification
+  → `chore(alt-tuning-validation): record on-device spot-check results`
+- [ ] On-device spot check that tap-to-lock still works for every preset
+  → `chore(alt-tuning-validation): confirm tap-to-lock across presets`
+- [ ] Update `docs/tuning-accuracy.md` with per-preset harmonic caveats found in M8
+  → `docs(alt-tuning): record per-preset harmonic caveats`
+- [ ] Update the README with the preset list and custom-tuning notes (if M10 shipped)
+  → `docs(alt-tuning): update README with preset list and custom-tuning notes`
+
+**Done when**
+- [ ] Physical-device spot check passes for every shipped preset
+- [ ] Regression fixtures added and passing
+- [ ] Docs updated
+
+**Wrap-up commit (only if the tasks above weren't committed individually):** `feat: validate and document alternate tuning support`
+
+---
+
 ## Cross-cutting concerns (apply throughout, not a single milestone)
 
 - **Error handling:** mic permission failures, audio session config errors, processing failures, device-specific edge cases
 - **Performance:** battery efficiency, real-time latency, graceful handling of audio interruptions (calls, other apps), background audio behavior
 - **Platform parity:** verify every milestone on both Android and iOS before marking Done — don't defer cross-platform testing to M6
+- **Context scoping (M7–M11):** each alternate-tuning milestone should be worked from its own section of this file plus the specific source files it names — avoid re-reading the full M1–M6 history to make progress on M7+
 
 ## Future / out of scope for this plan
 
-- Tuning selection screen (alternate tunings)
 - Multi-instrument support
 - History/record tracking
 - Chord recognition, metronome, song browsing
