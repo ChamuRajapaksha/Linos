@@ -16,7 +16,7 @@
 | 4 | Tuning logic and feedback system | Done | 3 |
 | 5 | Complete tuner UI with polish | Done | 4 |
 | 6 | Real-world tuning accuracy, testing, documentation, performance | Not Started | 5 |
-| 7 | Alternate tuning data model & presets | Not Started | 6 |
+| 7 | Alternate tuning data model & presets | Done | 6 |
 | 8 | Tuning-aware string matching & detection | Not Started | 7 |
 | 9 | Alternate tuning selection UI | Not Started | 8 |
 | 10 | Custom tuning support | Not Started | 9 |
@@ -216,17 +216,19 @@ lib/
   → `feat(tuning-model): add DADGAD preset`
 - [x] Ensure presets rescale correctly with the existing A4 reference-pitch setting (438/440/442 Hz from M5) — no hardcoded 440 Hz frequencies
   → `feat(tuning-model): rescale presets against configurable A4`
-- [ ] Add a `TuningRepository` (or extend the existing one) to list all presets and look one up by id
+- [x] Add a `TuningRepository` (or extend the existing one) to list all presets and look one up by id
   → `feat(tuning-model): add TuningRepository for preset lookup`
-- [ ] Persist "last selected tuning id" via existing local-storage mechanism (no UI yet — just the persistence layer)
+- [x] Persist "last selected tuning id" via existing local-storage mechanism (no UI yet — just the persistence layer)
   → `feat(tuning-model): persist last-selected tuning id`
-- [ ] Unit tests: string count, note names, and frequencies correct for every preset at all three A4 settings
+- [x] Unit tests: string count, note names, and frequencies correct for every preset at all three A4 settings
   → `test(tuning-model): cover presets across A4 settings`
 
 **Done when**
-- [ ] Every preset compiles and exposes the correct number of strings with correct notes
-- [ ] Frequencies are verified correct at all three A4 settings for every preset (unit tests, synthetic — no device needed)
-- [ ] No existing standard-tuning behavior, matching, or UI is touched or regressed
+- [x] Every preset compiles and exposes the correct number of strings with correct notes
+- [x] Frequencies are verified correct at all three A4 settings for every preset (unit tests, synthetic — no device needed)
+- [x] No existing standard-tuning behavior, matching, or UI is touched or regressed
+
+**Notes (completed):** `TuningPreset` catalog (7 presets) in `lib/domain/models/tuning_preset.dart` with `tuningFor(a4)` rescaling; `TuningRepository` (list/get/lookup) and `SharedPreferencesLastTuningStore` (key `lastTuningId`) in `lib/data/repositories/`, both registered in `lib/di/locator.dart`. Tests: `test/domain/models/tuning_preset_test.dart` (all presets × A4 438/440/442), `test/data/repositories/tuning_repository_test.dart`, `test/data/repositories/last_tuning_store_test.dart`. Verified: `flutter analyze` clean, 241 tests passing (2 pre-existing skips: real-guitar fixtures + soak).
 
 **Wrap-up commit (only if the tasks above weren't committed individually):** `feat: add alternate tuning data model and presets`
 
