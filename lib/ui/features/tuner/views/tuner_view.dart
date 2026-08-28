@@ -10,6 +10,7 @@ import '../../../../domain/models/tuning_status.dart';
 import '../../../../domain/use_cases/string_matcher.dart';
 import '../../../core/theme/linos_palette.dart';
 import '../view_models/tuner_view_model.dart';
+import 'tuning_picker_sheet.dart';
 
 class TunerView extends StatefulWidget {
   const TunerView({super.key, required this.viewModel});
@@ -90,9 +91,23 @@ class _TunerViewState extends State<TunerView> {
       showDragHandle: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (context) => _SettingsSheet(
-        referencePitch: widget.viewModel.a4Reference,
-        onReferenceChanged: widget.viewModel.setReferencePitch,
-        tuningNotes: widget.viewModel.tuningNotes,
+        viewModel: widget.viewModel,
+        onOpenTuningPicker: () => _openTuningPicker(context, widget.viewModel),
+      ),
+    );
+  }
+
+  Future<void> _openTuningPicker(
+      BuildContext context, TunerViewModel viewModel) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (context) => TuningPickerSheet(
+        presets: viewModel.tuningPresets,
+        selectedId: viewModel.tuningId,
+        onSelected: (_) {}, // wired to the ViewModel in a later commit
       ),
     );
   }
@@ -884,14 +899,12 @@ class _ErrorView extends StatelessWidget {
 
 class _SettingsSheet extends StatefulWidget {
   const _SettingsSheet({
-    required this.referencePitch,
-    required this.onReferenceChanged,
-    required this.tuningNotes,
+    required this.viewModel,
+    required this.onOpenTuningPicker,
   });
 
-  final double referencePitch;
-  final ValueChanged<double> onReferenceChanged;
-  final List<Note> tuningNotes;
+  final TunerViewModel viewModel;
+  final VoidCallback onOpenTuningPicker;
 
   @override
   State<_SettingsSheet> createState() => _SettingsSheetState();
@@ -900,7 +913,7 @@ class _SettingsSheet extends StatefulWidget {
 class _SettingsSheetState extends State<_SettingsSheet> {
   static const List<double> _options = [438, 440, 442];
 
-  late double _reference = widget.referencePitch;
+  late double _reference = widget.viewModel.a4Reference;
 
   @override
   Widget build(BuildContext context) {
@@ -922,61 +935,88 @@ class _SettingsSheetState extends State<_SettingsSheet> {
             ),
           ),
           const SizedBox(height: 20),
-          Text(
-            'REFERENCE PITCH A4',
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontSize: 11,
-              letterSpacing: 2,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Semantics(
-            container: true,
-            label: 'Reference pitch. ${_reference.toStringAsFixed(0)} hertz.',
-            child: Row(
-              children: [
-                for (int i = 0; i < _options.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 10),
-                  Expanded(
-                    child: _ChoiceChipButton(
-                      label: _options[i].toStringAsFixed(0),
-                      selected: _reference == _options[i],
-                      onTap: () {
-                        setState(() => _reference = _options[i]);
-                        widget.onReferenceChanged(_options[i]);
-                      },
+          ListenableBuilder(
+            listenable: widget.viewModel,
+            builder: (_, _) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'REFERENCE PITCH A4',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontSize: 11,
+                      letterSpacing: 2,
                     ),
                   ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: palette.panel,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: palette.panelBorder),
-            ),
-            child: Row(
-              children: [
-                Text('TUNING', style: theme.textTheme.labelMedium),
-                const Spacer(),
-                Text(
-                  'STANDARD · ${widget.tuningNotes.map((n) => n.name).join('–')}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: palette.text,
-                    letterSpacing: 1,
+                  const SizedBox(height: 8),
+                  Semantics(
+                    container: true,
+                    label:
+                        'Reference pitch. ${_reference.toStringAsFixed(0)} hertz.',
+                    child: Row(
+                      children: [
+                        for (int i = 0; i < _options.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 10),
+                          Expanded(
+                            child: _ChoiceChipButton(
+                              label: _options[i].toStringAsFixed(0),
+                              selected: _reference == _options[i],
+                              onTap: () {
+                                setState(() => _reference = _options[i]);
+                                widget.viewModel.setReferencePitch(_options[i]);
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Done'),
+                  const SizedBox(height: 20),
+                  Semantics(
+                    button: true,
+                    label:
+                        'Choose tuning, currently ${widget.viewModel.tuningName}.',
+                    child: InkWell(
+                      onTap: widget.onOpenTuningPicker,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: palette.panel,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: palette.panelBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            Text('TUNING', style: theme.textTheme.labelMedium),
+                            const Spacer(),
+                            Flexible(
+                              child: Text(
+                                '${widget.viewModel.tuningName.toUpperCase()} · ${widget.viewModel.tuningNotes.map((n) => n.name).join('–')}',
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: palette.text,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(Icons.chevron_right,
+                                size: 18, color: palette.textMuted),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Done'),
+                  ),
+                ],
+              );
+            },
           ),
           ],
         ),

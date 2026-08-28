@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../../data/repositories/tuning_repository.dart';
 import '../../../../data/services/audio_input_service.dart';
 import '../../../../data/services/pitch_detection_service.dart';
 import '../../../../domain/models/note.dart';
 import '../../../../domain/models/pitch_detection.dart';
 import '../../../../domain/models/tuning.dart';
+import '../../../../domain/models/tuning_preset.dart';
 import '../../../../domain/use_cases/level_calculator.dart';
 import '../../../../domain/use_cases/string_matcher.dart';
 import '../../../../domain/use_cases/tuning_status_classifier.dart';
@@ -26,14 +28,24 @@ class TunerViewModel extends ChangeNotifier {
     required PitchDetectionService pitchDetectionService,
     required StringMatcher stringMatcher,
     double a4Reference = Note.a4Reference,
+    TuningRepository tuningRepository = const TuningRepository(),
   })  : _audioInputService = audioInputService,
         _pitchDetectionService = pitchDetectionService,
         _stringMatcher = stringMatcher,
-        _a4Reference = a4Reference;
+        _a4Reference = a4Reference,
+        _tuningRepository = tuningRepository;
 
   final AudioInputService _audioInputService;
   final PitchDetectionService _pitchDetectionService;
+  final TuningRepository _tuningRepository;
   StringMatcher _stringMatcher;
+
+  final String _tuningId = TuningPreset.standard.id;
+  String get tuningId => _tuningId;
+
+  List<TuningPreset> get tuningPresets => _tuningRepository.listPresets();
+
+  String get tuningName => _stringMatcher.tuning.name;
 
   double _a4Reference;
   double get a4Reference => _a4Reference;

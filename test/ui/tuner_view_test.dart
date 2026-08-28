@@ -11,6 +11,7 @@ import 'package:linos/domain/use_cases/string_matcher.dart';
 import 'package:linos/ui/core/theme/app_theme.dart';
 import 'package:linos/ui/features/tuner/view_models/tuner_view_model.dart';
 import 'package:linos/ui/features/tuner/views/tuner_view.dart';
+import 'package:linos/ui/features/tuner/views/tuning_picker_sheet.dart';
 
 class FakeAudioInputService implements AudioInputService {
   FakeAudioInputService({
@@ -160,6 +161,34 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('TUNER SETTINGS'), findsNothing);
+  });
+
+  testWidgets('tuning picker shell opens from settings; selection not wired yet',
+      (tester) async {
+    final viewModel = await pumpTuner(tester);
+
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.textContaining('STANDARD ·'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CHOOSE TUNING'), findsOneWidget);
+    expect(find.text('DADGAD'), findsOneWidget);
+
+    await tester.tap(find.text('DROP D'));
+    await tester.pumpAndSettle();
+
+    final doneInPicker = find.descendant(
+      of: find.byType(TuningPickerSheet),
+      matching: find.text('Done'),
+    );
+    await tester.ensureVisible(doneInPicker);
+    await tester.pumpAndSettle();
+    await tester.tap(doneInPicker);
+    await tester.pumpAndSettle();
+
+    expect(viewModel.tuningId, 'standard');
   });
 
   testWidgets('reference pitch shift moves the in-tune point', (tester) async {
