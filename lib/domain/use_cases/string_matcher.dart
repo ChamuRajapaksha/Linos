@@ -37,26 +37,42 @@ class StringMatch {
 
 /// Matches detected frequencies to a string in the tuning, folding harmonic
 /// partials back to their fundamental. Folds up to the 4th harmonic (the
-/// default `maxHarmonic`) so, for
-/// example, a low-E reading captured at its 4th partial still resolves to the
-/// correct string. The tie-break prefers the lower harmonic, so a genuine
-/// high-E (329.63 Hz) still wins at harmonic 1 over low-E at harmonic 4.
+/// default `maxHarmonic`) so, for example, a low-E reading captured at its
+/// 4th partial still resolves to the correct string.
+///
+/// A genuine fundamental (harmonic-1) reading is preferred over a coincidental
+/// harmonic of a lower string whenever it lands within
+/// `fundamentalPreferenceCents`. This is required because harmonic folding is
+/// ambiguous across tunings (and even within standard tuning): e.g. low-E's
+/// 3rd harmonic (247.23 Hz) sits ~2 cents from B3's fundamental, and in the
+/// octave-stacked open tunings a top string's fundamental equals a lower
+/// string's 2nd harmonic. Detection (YIN) reports the true fundamental, so the
+/// prefer-fundamental rule keeps genuine plucks on the string that was played,
+/// only falling back to harmonic folding when the reading is close to no
+/// fundamental at all.
 class StringMatcher {
   const StringMatcher({
     this.tuning = Tuning.standard,
     this.classifier = const TuningStatusClassifier(),
     this.maxHarmonic = 4,
-  }) : assert(maxHarmonic >= 1);
+    this.fundamentalPreferenceCents = 25.0,
+  })  : assert(maxHarmonic >= 1),
+        assert(fundamentalPreferenceCents >= 0);
 
   final Tuning tuning;
   final TuningStatusClassifier classifier;
   final int maxHarmonic;
+
+  /// Cents within which a harmonic-1 (fundamental) candidate beats any
+  /// harmonic-folded candidate.
+  final double fundamentalPreferenceCents;
 
   StringMatch? identify(double frequency, {double? maxMatchCents}) {
     if (frequency <= 0) {
       return null;
     }
     StringMatch? best;
+    StringMatch? bestFundamental;
     for (var i = 0; i < tuning.notes.length; i++) {
       final note = tuning.notes[i];
       for (var h = 1; h <= maxHarmonic; h++) {
@@ -77,14 +93,28 @@ class StringMatcher {
             status: classifier.classify(cents),
           );
         }
+        if (h == 1 && (bestFundamental == null ||
+            cents.abs() < bestFundamental.centsOffset.abs())) {
+          bestFundamental = StringMatch(
+            stringIndex: i,
+            targetNote: note,
+            centsOffset: cents,
+            harmonic: 1,
+            status: classifier.classify(cents),
+          );
+        }
       }
     }
+    final candidate = (bestFundamental != null &&
+            bestFundamental.centsOffset.abs() <= fundamentalPreferenceCents)
+        ? bestFundamental
+        : best;
     if (maxMatchCents != null &&
-        best != null &&
-        best.centsOffset.abs() > maxMatchCents) {
+        candidate != null &&
+        candidate.centsOffset.abs() > maxMatchCents) {
       return null;
     }
-    return best;
+    return candidate;
   }
 
   StringState analyzeForString(int stringIndex, double frequency) {

@@ -113,11 +113,14 @@ void main() {
       expect(match.status, TuningStatus.inTune);
     });
 
-    test('3rd harmonic of E2 resolves to E2, not B3 fundamental', () {
+    test('3rd harmonic of E2 prefers B3 fundamental (M8 re-derivation)', () {
+      // 247.23 is both E2's 3rd harmonic and ~2 cents from B3's fundamental.
+      // Detection reports fundamentals, so the prefer-fundamental rule maps a
+      // genuine B3 reading here; this replaces the pre-M8 E2@h3 decision.
       final match = matcher.identify(247.23);
-      expect(match!.stringIndex, 0);
-      expect(match.harmonic, 3);
-      expect(match.centsOffset, closeTo(0, 0.01));
+      expect(match!.stringIndex, 4);
+      expect(match.harmonic, 1);
+      expect(match.centsOffset, closeTo(2.05, 0.1));
       expect(match.status, TuningStatus.inTune);
     });
 
@@ -162,11 +165,11 @@ void main() {
       expect(match.centsOffset, closeTo(0, 0.1));
     });
 
-    test('3rd harmonic of low E still wins over nearby fundamentals', () {
+    test('a genuine B3 fundamental wins over low-E 3rd harmonic (M8)', () {
       final match = matcher.identify(247.23);
-      expect(match!.stringIndex, 0);
-      expect(match.harmonic, 3);
-      expect(match.centsOffset, closeTo(0, 0.01));
+      expect(match!.stringIndex, 4);
+      expect(match.harmonic, 1);
+      expect(match.centsOffset, closeTo(2.05, 0.1));
     });
   });
 
