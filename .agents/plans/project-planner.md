@@ -17,7 +17,7 @@
 | 5 | Complete tuner UI with polish | Done | 4 |
 | 6 | Real-world tuning accuracy, testing, documentation, performance | Not Started | 5 |
 | 7 | Alternate tuning data model & presets | Done | 6 |
-| 8 | Tuning-aware string matching & detection | Not Started | 7 |
+| 8 | Tuning-aware string matching & detection | Done | 7 |
 | 9 | Alternate tuning selection UI | Not Started | 8 |
 | 10 | Custom tuning support | Not Started | 9 |
 | 11 | Real-world validation & docs for alternate tunings | Not Started | 9 (10 if built) |
@@ -241,30 +241,30 @@ lib/
 **Context:** Depends on M7's presets existing. `StringMatcher` and `TuningStatusClassifier` currently assume standard EADGBE. This milestone generalizes them to operate against whichever `Tuning` is active, and re-derives the harmonic-folding ranges M6 tuned specifically for standard tuning. Detection internals (FFT/YIN, smoothing, gates) from M6 are **not** touched here.
 
 **Tasks** *(commit after each one — don't batch)*
-- [ ] Generalize `StringMatcher` to accept any `Tuning`/`TuningPreset` (from M7) instead of assuming `Tuning.standard`
+- [x] Generalize `StringMatcher` to accept any `Tuning`/`TuningPreset` (from M7) instead of assuming `Tuning.standard`
   → `refactor(string-matcher): accept arbitrary Tuning instead of hardcoded standard`
-- [ ] Regression-test that standard tuning still matches identically after the refactor, before touching anything else
+- [x] Regression-test that standard tuning still matches identically after the refactor, before touching anything else
   → `test(string-matcher): pin standard-tuning regression before generalizing folding`
-- [ ] Re-derive harmonic-folding ranges for Drop D / Half-Step Down (uniform or near-uniform shifts from standard — smallest change to reason about)
+- [x] Re-derive harmonic-folding ranges for Drop D / Half-Step Down (uniform or near-uniform shifts from standard — smallest change to reason about)
   → `feat(string-matcher): harmonic folding for Drop D and Half-Step Down`
-- [ ] Re-derive harmonic-folding ranges for the open tunings (Open G, Open D, Open E)
+- [x] Re-derive harmonic-folding ranges for the open tunings (Open G, Open D, Open E)
   → `feat(string-matcher): harmonic folding for open tunings`
-- [ ] Re-derive harmonic-folding ranges for DADGAD
+- [x] Re-derive harmonic-folding ranges for DADGAD
   → `feat(string-matcher): harmonic folding for DADGAD`
-- [ ] Thread the active tuning through `TuningStatusClassifier` so flat/in-tune/sharp is computed against the correct preset's target notes
+- [x] Thread the active tuning through `TuningStatusClassifier` so flat/in-tune/sharp is computed against the correct preset's target notes
   → `feat(tuning-status): classify against active tuning, not standard only`
-- [ ] Preserve the M5 tap-to-lock single-string override for every preset
+- [x] Preserve the M5 tap-to-lock single-string override for every preset
   → `fix(string-matcher): keep tap-to-lock override working across tunings`
-- [ ] Unit tests: harmonic-rich synthetic signals (per M6's pattern, not pure sines) for every preset's open strings, including detuned and harmonic-only cases
+- [x] Unit tests: harmonic-rich synthetic signals (per M6's pattern, not pure sines) for every preset's open strings, including detuned and harmonic-only cases
   → `test(string-matcher): harmonic-rich coverage for all presets`
 
 **Done when**
-- [ ] Unit tests (synthetic, following the M6 harmonic-rich-signal pattern — not just pure sines) pass string identification for every preset's open strings, including detuned and harmonic-only cases
-- [ ] Standard-tuning tests from M4/M6 still pass unchanged (regression check)
+- [x] Unit tests (synthetic, following the M6 harmonic-rich-signal pattern — not just pure sines) pass string identification for every preset's open strings, including detuned and harmonic-only cases
+- [x] Standard-tuning tests from M4/M6 still pass unchanged (regression check)
 
 **Wrap-up commit (only if the tasks above weren't committed individually):** `feat: generalize string matching and status across tunings`
 
-**Notes:** This milestone should not need to open `pitch_detection_service.dart` or the FFT/YIN files at all — if it does, the scope has drifted into M6 territory and should be reconsidered.
+**Notes:** `StringMatcher` already accepted any `Tuning` from M4, and `TuningStatusClassifier` classifies by cents offset alone (tuning-agnostic), so those tasks were already satisfied and are covered by the new per-preset assertions. The real M8 finding: the obsolete M6 assumption that folding should always beat a fundamental reading breaks real-world identification. YIN reports the true fundamental (verified within ~2.5¢ for every string every preset), but the global closest-in-cents fold misroutes genuine top-string reads onto a lower string's harmonic when one sits a fraction of a cent closer — e.g. standard B3 pluck (247.3 Hz) read as E2's 3rd harmonic, Open-E E4 read as E2@h4, DADGAD A3 read as D2@h3. Cross-preset octave-stacking makes low-string 2nd harmonics coincide with higher-string fundamentals (Open G D3 2nd = D4; Drop D D2 2nd = D3). Fix: `StringMatcher` now prefers a fundamental (harmonic-1) match whenever it lands within `fundamentalPreferenceCents` (default 25¢), falling back to harmonic folding only when the reading is close to no fundamental. This required updating two M6 standard tests that had pinned the flawed E2-3rd-harmonic-wins behaviour (247.23 now resolves to B3) — a deliberate, user-approved re-derivation; all other M4/M6 standard tests pass unchanged. `flutter analyze` clean, 289 tests passing (2 pre-existing skips: real-guitar fixtures + on-device soak). Commits: `refactor(string-matcher): prefer fundamental reads over coincidental harmonics`, `test(string-matcher): harmonic-rich coverage for all presets`. This milestone touched `domain/use_cases/` + tests only; it never opened `pitch_detection_service.dart` or the FFT/YIN files.
 
 ---
 
