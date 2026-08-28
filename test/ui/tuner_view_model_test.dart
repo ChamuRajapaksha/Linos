@@ -713,5 +713,108 @@ void main() {
 
       expect(viewModel.selectedString, 4);
     });
+
+    test('matching responds live to a tuning switch, no restart required',
+        () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      pitchService.pushDetection(detection(frequency: 110.0, octave: 2));
+      await pumpEventQueue();
+
+      expect(viewModel.stringMatch!.stringIndex, 1);
+      expect(viewModel.stringMatch!.targetNote.label, 'A2');
+
+      await viewModel.selectTuning('dadgad');
+
+      expect(viewModel.tuningName, 'DADGAD');
+      expect(viewModel.stringMatch!.stringIndex, 1);
+      expect(viewModel.stringMatch!.targetNote.label, 'A2');
+
+      pitchService.pushDetection(detection(frequency: 73.42, octave: 2));
+      await pumpEventQueue();
+
+      expect(viewModel.stringMatch!.stringIndex, 0);
+      expect(viewModel.stringMatch!.targetNote.label, 'D2');
+      expect(viewModel.stringMatch!.status, TuningStatus.inTune);
+    });
+
+    test('detuned frequency resolves against the new preset target notes',
+        () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      await viewModel.selectTuning('half-step-down');
+      pitchService.pushDetection(detection(frequency: 82.41, octave: 2));
+      await pumpEventQueue();
+
+      expect(viewModel.stringMatch!.stringIndex, 0);
+      expect(viewModel.stringMatch!.targetNote.label, 'D#2');
+      expect(viewModel.stringMatch!.status, TuningStatus.sharp);
+      expect(viewModel.stringMatch!.centsOffset, closeTo(100, 1));
+    });
+
+    test('status reclassifies against the preset retuned to the reference pitch',
+        () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      await viewModel.selectTuning('open-g');
+      viewModel.setReferencePitch(442);
+      pitchService.pushDetection(
+        detection(frequency: 196.0 * (442 / 440), octave: 3),
+      );
+      await pumpEventQueue();
+
+      expect(viewModel.stringMatch!.stringIndex, 3);
+      expect(viewModel.stringMatch!.targetNote.label, 'G3');
+      expect(viewModel.stringMatch!.status, TuningStatus.inTune);
+    });
+
+    test('tap-to-lock string override survives a tuning switch', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      viewModel.selectString(4);
+      await viewModel.selectTuning('half-step-down');
+      pitchService.pushDetection(detection(frequency: 233.08, octave: 3));
+      await pumpEventQueue();
+
+      expect(viewModel.stringMatch!.stringIndex, 4);
+      expect(viewModel.stringMatch!.targetNote.label, 'A#3');
+      expect(viewModel.stringMatch!.status, TuningStatus.inTune);
+    });
   });
 }
