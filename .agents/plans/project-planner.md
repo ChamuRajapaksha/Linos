@@ -18,7 +18,7 @@
 | 6 | Real-world tuning accuracy, testing, documentation, performance | Not Started | 5 |
 | 7 | Alternate tuning data model & presets | Done | 6 |
 | 8 | Tuning-aware string matching & detection | Done | 7 |
-| 9 | Alternate tuning selection UI | Not Started | 8 |
+| 9 | Alternate tuning selection UI | Done | 8 |
 | 10 | Custom tuning support | Not Started | 9 |
 | 11 | Real-world validation & docs for alternate tunings | Not Started | 9 (10 if built) |
 
@@ -273,28 +273,30 @@ lib/
 **Context:** Depends on M8. Adds the user-facing way to switch tunings; everything underneath already works by this point.
 
 **Tasks** *(commit after each one — don't batch)*
-- [ ] Build the tuning picker UI shell (bottom sheet or settings screen) listing presets from M7, no wiring yet
+- [x] Build the tuning picker UI shell (bottom sheet or settings screen) listing presets from M7, no wiring yet
   → `feat(tuning-ui): add tuning picker shell listing presets`
-- [ ] Wire the picker's selection into the tuner `ViewModel`
+- [x] Wire the picker's selection into the tuner `ViewModel`
   → `feat(tuning-ui): wire tuning selection into ViewModel`
-- [ ] Re-render the string rail (from M5) with the new preset's labels/order on selection
+- [x] Re-render the string rail (from M5) with the new preset's labels/order on selection
   → `feat(tuning-ui): re-render string rail on tuning change`
-- [ ] Confirm matching/status (M8) responds live to the new selection, no restart required
+- [x] Confirm matching/status (M8) responds live to the new selection, no restart required
   → `test(tuning-ui): verify live matching update on tuning switch`
-- [ ] Persist the selected tuning across app restarts (via the M7 persistence hook)
+- [x] Persist the selected tuning across app restarts (via the M7 persistence hook)
   → `feat(tuning-ui): persist selected tuning across restarts`
-- [ ] Show the currently active tuning name on the main tuner screen
+- [x] Show the currently active tuning name on the main tuner screen
   → `feat(tuning-ui): show active tuning name on tuner screen`
-- [ ] Accessibility labels for the picker and the active-tuning indicator
+- [x] Accessibility labels for the picker and the active-tuning indicator
   → `feat(tuning-ui): accessibility labels for picker and indicator`
 
 **Done when**
-- [ ] Switching tuning updates string rail, matching, and status live, with no restart required
-- [ ] Selection persists after a full app restart
-- [ ] Accessibility pass done for the new UI surfaces
-- [ ] `flutter analyze` clean, existing test suite still passing
+- [x] Switching tuning updates string rail, matching, and status live, with no restart required
+- [x] Selection persists after a full app restart
+- [x] Accessibility pass done for the new UI surfaces
+- [x] `flutter analyze` clean, existing test suite still passing
 
 **Wrap-up commit (only if the tasks above weren't committed individually):** `feat: add alternate tuning selection UI`
+
+**Notes (completed):** `TuningPickerSheet` (`lib/ui/features/tuner/views/tuning_picker_sheet.dart`) lists all seven M7 presets with live selected-state highlight and populates from `viewModel.tuningPresets`. `TunerViewModel` gained `selectTuning(id)`/`_applyTuning(id)` (rebuilds the `StringMatcher` against `preset.tuningFor(a4Reference)` and re-runs the latest pitch), and `setReferencePitch` now retunes the *active* preset instead of hardcoded standard. Selection re-renders the string rail live (reactive via `ListenableBuilder`) and matching/status recompute without restart — regression-tested. Persistence via the M7 hook: `initialize()` restores the last tuning through `LastTuningStore` (falls back to standard on unknown id or storage error) and `selectTuning` writes it back; locator wires both `TuningRepository` and `LastTuningStore` into the VM. The active tuning name shows on the tuner screen as a tappable header chip (`_TuningIndicator`) that also opens the picker, plus the settings-sheet TUNING row. A11y: single merged labels for the picker options (`'<Name> tuning'` + button/selected/tap), `ExcludeSemantics` on visual legends/icons, `Semantics(header: true, label: 'Choose tuning')`, indicator label `'Tuning, <Name>. Tap to change.'`. `flutter analyze` clean, 317 tests passing (2 pre-existing skips: real-guitar fixtures + soak). One test-infra side effect: app-level `linos_app_test.dart` now mocks `SharedPreferences` because the VM persistence hook runs in `initialize()`. Commits landed per-task (7 commits + this docs commit), so no wrap-up commit was needed.
 
 ---
 
