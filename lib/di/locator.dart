@@ -42,6 +42,7 @@ abstract final class Locator {
           pitchDetectionService: locator<PitchDetectionService>(),
           stringMatcher: locator<StringMatcher>(),
           tuningRepository: locator<TuningRepository>(),
+          lastTuningStore: locator<LastTuningStore>(),
         ),
       );
     }

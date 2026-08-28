@@ -6,6 +6,7 @@ import 'package:linos/data/services/pitch_detection_service.dart';
 import 'package:linos/di/locator.dart';
 import 'package:linos/ui/core/linos_app.dart';
 import 'package:linos/ui/features/tuner/view_models/tuner_view_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// In-memory AudioInputService double for widget tests.
 class FakeAudioInputService implements AudioInputService {
@@ -48,6 +49,7 @@ void main() {
   late FakeAudioInputService fake;
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
     await locator.reset();
     fake = FakeAudioInputService();
     locator.registerSingleton<AudioInputService>(fake);

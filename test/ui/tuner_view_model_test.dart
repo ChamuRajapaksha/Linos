@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:linos/data/repositories/last_tuning_store.dart';
 import 'package:linos/data/services/audio_input_service.dart';
 import 'package:linos/data/services/pitch_detection_service.dart';
 import 'package:linos/data/services/record_audio_input_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:linos/domain/models/frequency.dart';
 import 'package:linos/domain/models/note.dart';
 import 'package:linos/domain/models/pitch_detection.dart';
@@ -815,6 +817,123 @@ void main() {
       expect(viewModel.stringMatch!.stringIndex, 4);
       expect(viewModel.stringMatch!.targetNote.label, 'A#3');
       expect(viewModel.stringMatch!.status, TuningStatus.inTune);
+    });
+  });
+
+  group('TunerViewModel persistence', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    TunerViewModel buildPersistentVm(
+      AudioInputService service, {
+      double a4Reference = Note.a4Reference,
+      LastTuningStore? store,
+    }) {
+      return TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
+        a4Reference: a4Reference,
+        lastTuningStore: store ?? SharedPreferencesLastTuningStore(),
+      );
+    }
+
+    test('initialize restores a persisted tuning', () async {
+      SharedPreferences.setMockInitialValues({'lastTuningId': 'drop-d'});
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = buildPersistentVm(service);
+
+      await viewModel.initialize();
+
+      expect(viewModel.tuningId, 'drop-d');
+      expect(viewModel.tuningName, 'Drop D');
+      expect(viewModel.tuningNotes[0].label, 'D2');
+      expect(service.startCalls, 1);
+    });
+
+    test('persisted tuning is applied against the configured A4', () async {
+      SharedPreferences.setMockInitialValues({'lastTuningId': 'open-g'});
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = buildPersistentVm(service, a4Reference: 442);
+
+      await viewModel.initialize();
+
+      expect(
+        viewModel.tuningNotes[0].frequency,
+        closeTo(73.42 * (442 / 440), 0.01),
+      );
+      expect(viewModel.tuningNotes[3].label, 'G3');
+    });
+
+    test('unknown persisted id falls back to standard', () async {
+      SharedPreferences.setMockInitialValues({'lastTuningId': 'bogus'});
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = buildPersistentVm(service);
+
+      await viewModel.initialize();
+
+      expect(viewModel.tuningId, 'standard');
+      expect(viewModel.tuningNotes[0].label, 'E2');
+    });
+
+    test('selectTuning persists the chosen id', () async {
+      final store = SharedPreferencesLastTuningStore();
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = buildPersistentVm(service, store: store);
+
+      await viewModel.initialize();
+      await viewModel.selectTuning('dadgad');
+
+      expect(await store.getLastTuningId(), 'dadgad');
+    });
+
+    test('selection survives a full restart round-trip', () async {
+      final store1 = SharedPreferencesLastTuningStore();
+      final service1 = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final vm1 = buildPersistentVm(service1, store: store1);
+
+      await vm1.initialize();
+      await vm1.selectTuning('open-e');
+
+      final service2 = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final vm2 = buildPersistentVm(
+        service2,
+        store: SharedPreferencesLastTuningStore(),
+      );
+
+      await vm2.initialize();
+
+      expect(vm2.tuningId, 'open-e');
+      expect(vm2.tuningName, 'Open E');
+    });
+
+    test('no store means tuning switches still work', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      await viewModel.selectTuning('drop-d');
+
+      expect(viewModel.tuningName, 'Drop D');
     });
   });
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../../data/repositories/last_tuning_store.dart';
 import '../../../../data/repositories/tuning_repository.dart';
 import '../../../../data/services/audio_input_service.dart';
 import '../../../../data/services/pitch_detection_service.dart';
@@ -28,15 +29,18 @@ class TunerViewModel extends ChangeNotifier {
     required StringMatcher stringMatcher,
     double a4Reference = Note.a4Reference,
     TuningRepository tuningRepository = const TuningRepository(),
+    LastTuningStore? lastTuningStore,
   })  : _audioInputService = audioInputService,
         _pitchDetectionService = pitchDetectionService,
         _stringMatcher = stringMatcher,
         _a4Reference = a4Reference,
-        _tuningRepository = tuningRepository;
+        _tuningRepository = tuningRepository,
+        _lastTuningStore = lastTuningStore;
 
   final AudioInputService _audioInputService;
   final PitchDetectionService _pitchDetectionService;
   final TuningRepository _tuningRepository;
+  final LastTuningStore? _lastTuningStore;
   StringMatcher _stringMatcher;
 
   String _tuningId = TuningPreset.standard.id;
@@ -75,6 +79,7 @@ class TunerViewModel extends ChangeNotifier {
 
   Future<void> initialize() async {
     _errorMessage = null;
+    await _loadLastTuning();
     if (_permission == MicrophonePermissionState.granted) {
       await startCapture();
       return;
@@ -198,6 +203,34 @@ class TunerViewModel extends ChangeNotifier {
       return;
     }
     notifyListeners();
+    await _persistTuning(id);
+  }
+
+  Future<void> _loadLastTuning() async {
+    final store = _lastTuningStore;
+    if (store == null) {
+      return;
+    }
+    try {
+      final id = await store.getLastTuningId();
+      if (id != null && id != _tuningId && _applyTuning(id)) {
+        notifyListeners();
+      }
+    } catch (_) {
+      // Storage failure falls back to the default tuning.
+    }
+  }
+
+  Future<void> _persistTuning(String id) async {
+    final store = _lastTuningStore;
+    if (store == null) {
+      return;
+    }
+    try {
+      await store.setLastTuningId(id);
+    } catch (_) {
+      // A persistence failure must not break the live switch.
+    }
   }
 
   bool _applyTuning(String id) {
