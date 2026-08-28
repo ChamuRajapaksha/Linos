@@ -192,6 +192,23 @@ void main() {
     expect(viewModel.tuningName, 'Drop D');
   });
 
+  testWidgets('string rail re-renders on tuning selection', (tester) async {
+    final viewModel = await pumpTuner(tester);
+
+    expect(find.text('E'), findsNWidgets(2));
+    expect(find.text('D'), findsOneWidget);
+
+    await viewModel.selectTuning('drop-d');
+    await tester.pump();
+
+    expect(find.text('D'), findsNWidgets(2));
+    expect(find.text('E'), findsOneWidget);
+    expect(find.text('A'), findsOneWidget);
+    expect(find.text('G'), findsOneWidget);
+    expect(find.text('B'), findsOneWidget);
+    expect(find.text('AUTO'), findsOneWidget);
+  });
+
   testWidgets('reference pitch shift moves the in-tune point', (tester) async {
     final pitch = FakePitchDetectionService(FakeAudioInputService());
     final viewModel = await pumpTuner(tester, pitchService: pitch);
