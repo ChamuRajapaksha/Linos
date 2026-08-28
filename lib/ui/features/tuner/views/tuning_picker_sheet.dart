@@ -39,7 +39,14 @@ class _TuningPickerSheetState extends State<TuningPickerSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('CHOOSE TUNING', style: theme.textTheme.labelLarge),
+            Semantics(
+              header: true,
+              container: true,
+              excludeSemantics: true,
+              label: 'Choose tuning',
+              child:
+                  Text('CHOOSE TUNING', style: theme.textTheme.labelLarge),
+            ),
             const SizedBox(height: 4),
             Text(
               'Presets for a six-string guitar.',
@@ -97,49 +104,54 @@ class _TuningOptionTile extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 140),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              color: selected
-                  ? palette.accent.withValues(alpha: 0.18)
-                  : palette.panel,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: selected ? palette.accent : palette.panelBorder,
-                width: selected ? 1.6 : 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        preset.name.toUpperCase(),
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: selected ? palette.accent : palette.text,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        preset.notes.map((n) => n.name).join('\u2013'),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: palette.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
+          child: ExcludeSemantics(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 140),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                color: selected
+                    ? palette.accent.withValues(alpha: 0.18)
+                    : palette.panel,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: selected ? palette.accent : palette.panelBorder,
+                  width: selected ? 1.6 : 1,
                 ),
-                if (selected)
-                  Icon(Icons.check_circle, color: palette.accent, size: 20),
-              ],
+              ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            preset.name.toUpperCase(),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color:
+                                  selected ? palette.accent : palette.text,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            preset.notes.map((n) => n.name).join('\u2013'),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: palette.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (selected)
+                      Icon(Icons.check_circle,
+                          color: palette.accent, size: 20),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

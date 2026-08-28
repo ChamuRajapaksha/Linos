@@ -245,4 +245,50 @@ void main() {
     expect(viewModel.stringMatch!.status.name, 'inTune');
     expect(find.textContaining('IN TUNE'), findsWidgets);
   });
+
+  testWidgets('tuning indicator exposes accessible semantics and opens the picker',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    final viewModel = await pumpTuner(tester);
+
+    expect(
+      find.bySemanticsLabel('Tuning, Standard. Tap to change.'),
+      findsOneWidget,
+    );
+
+    await viewModel.selectTuning('drop-d');
+    await tester.pump();
+
+    expect(
+      find.bySemanticsLabel('Tuning, Drop D. Tap to change.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('DROP D'));
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Choose tuning'), findsOneWidget);
+    expect(find.bySemanticsLabel('Drop D tuning'), findsOneWidget);
+
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    handle.dispose();
+  });
+
+  testWidgets('settings tuning row exposes its accessible label',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpTuner(tester);
+
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.bySemanticsLabel('Choose tuning, currently Standard.'),
+      findsOneWidget,
+    );
+
+    handle.dispose();
+  });
 }

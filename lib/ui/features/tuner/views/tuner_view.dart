@@ -240,26 +240,28 @@ class _TuningIndicator extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: palette.accent.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: palette.accent.withValues(alpha: 0.5)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                name.toUpperCase(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: palette.accent,
-                  letterSpacing: 2,
+        child: ExcludeSemantics(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: palette.accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: palette.accent.withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name.toUpperCase(),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: palette.accent,
+                    letterSpacing: 2,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 2),
-              Icon(Icons.expand_more, size: 16, color: palette.accent),
-            ],
+                const SizedBox(width: 2),
+                Icon(Icons.expand_more, size: 16, color: palette.accent),
+              ],
+            ),
           ),
         ),
       ),
@@ -1041,32 +1043,34 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                     child: InkWell(
                       onTap: widget.onOpenTuningPicker,
                       borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: palette.panel,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: palette.panelBorder),
-                        ),
-                        child: Row(
-                          children: [
-                            Text('TUNING', style: theme.textTheme.labelMedium),
-                            const Spacer(),
-                            Flexible(
-                              child: Text(
-                                '${widget.viewModel.tuningName.toUpperCase()} · ${widget.viewModel.tuningNotes.map((n) => n.name).join('–')}',
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: palette.text,
-                                  letterSpacing: 1,
+                      child: ExcludeSemantics(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: palette.panel,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: palette.panelBorder),
+                          ),
+                          child: Row(
+                            children: [
+                              Text('TUNING', style: theme.textTheme.labelMedium),
+                              const Spacer(),
+                              Flexible(
+                                child: Text(
+                                  '${widget.viewModel.tuningName.toUpperCase()} · ${widget.viewModel.tuningNotes.map((n) => n.name).join('–')}',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: palette.text,
+                                    letterSpacing: 1,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(Icons.chevron_right,
-                                size: 18, color: palette.textMuted),
-                          ],
+                              const SizedBox(width: 8),
+                              Icon(Icons.chevron_right,
+                                  size: 18, color: palette.textMuted),
+                            ],
+                          ),
                         ),
                       ),
                     ),
