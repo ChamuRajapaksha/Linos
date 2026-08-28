@@ -107,7 +107,7 @@ class _TunerViewState extends State<TunerView> {
       builder: (context) => TuningPickerSheet(
         presets: viewModel.tuningPresets,
         selectedId: viewModel.tuningId,
-        onSelected: (_) {}, // wired to the ViewModel in a later commit
+        onSelected: viewModel.selectTuning,
       ),
     );
   }

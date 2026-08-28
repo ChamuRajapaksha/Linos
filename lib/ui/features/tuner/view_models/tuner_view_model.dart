@@ -7,7 +7,6 @@ import '../../../../data/services/audio_input_service.dart';
 import '../../../../data/services/pitch_detection_service.dart';
 import '../../../../domain/models/note.dart';
 import '../../../../domain/models/pitch_detection.dart';
-import '../../../../domain/models/tuning.dart';
 import '../../../../domain/models/tuning_preset.dart';
 import '../../../../domain/use_cases/level_calculator.dart';
 import '../../../../domain/use_cases/string_matcher.dart';
@@ -40,7 +39,7 @@ class TunerViewModel extends ChangeNotifier {
   final TuningRepository _tuningRepository;
   StringMatcher _stringMatcher;
 
-  final String _tuningId = TuningPreset.standard.id;
+  String _tuningId = TuningPreset.standard.id;
   String get tuningId => _tuningId;
 
   List<TuningPreset> get tuningPresets => _tuningRepository.listPresets();
@@ -191,13 +190,41 @@ class TunerViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> selectTuning(String id) async {
+    if (id == _tuningId) {
+      return;
+    }
+    if (!_applyTuning(id)) {
+      return;
+    }
+    notifyListeners();
+  }
+
+  bool _applyTuning(String id) {
+    final preset = _tuningRepository.getPreset(id);
+    if (preset == null) {
+      return false;
+    }
+    _tuningId = id;
+    _stringMatcher = StringMatcher(
+      tuning: preset.tuningFor(_a4Reference),
+      classifier: const TuningStatusClassifier(),
+    );
+    if (_pitch != null) {
+      _onPitch(_pitch!);
+    }
+    return true;
+  }
+
   void setReferencePitch(double reference) {
     if (reference <= 0 || reference == _a4Reference) {
       return;
     }
     _a4Reference = reference;
+    final preset =
+        _tuningRepository.getPreset(_tuningId) ?? TuningPreset.standard;
     _stringMatcher = StringMatcher(
-      tuning: Tuning.standard.retunedTo(reference),
+      tuning: preset.tuningFor(reference),
       classifier: const TuningStatusClassifier(),
     );
     if (_pitch != null) {

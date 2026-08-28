@@ -163,7 +163,7 @@ void main() {
     expect(find.text('TUNER SETTINGS'), findsNothing);
   });
 
-  testWidgets('tuning picker shell opens from settings; selection not wired yet',
+  testWidgets('selecting a tuning from the picker wires into the view model',
       (tester) async {
     final viewModel = await pumpTuner(tester);
 
@@ -188,7 +188,8 @@ void main() {
     await tester.tap(doneInPicker);
     await tester.pumpAndSettle();
 
-    expect(viewModel.tuningId, 'standard');
+    expect(viewModel.tuningId, 'drop-d');
+    expect(viewModel.tuningName, 'Drop D');
   });
 
   testWidgets('reference pitch shift moves the in-tune point', (tester) async {

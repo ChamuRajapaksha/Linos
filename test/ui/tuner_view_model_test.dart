@@ -603,5 +603,115 @@ void main() {
       viewModel.setReferencePitch(-5);
       expect(viewModel.a4Reference, 440);
     });
+
+    test('selectTuning switches the matcher to the preset', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.selectTuning('drop-d');
+
+      expect(viewModel.tuningId, 'drop-d');
+      expect(viewModel.tuningName, 'Drop D');
+      expect(viewModel.tuningNotes[0].label, 'D2');
+    });
+
+    test('selectTuning ignores unknown ids', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.selectTuning('nope');
+
+      expect(viewModel.tuningId, 'standard');
+      expect(viewModel.tuningNotes[0].label, 'E2');
+    });
+
+    test('selectTuning same id is a no-op', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.selectTuning('drop-d');
+      await viewModel.selectTuning('drop-d');
+
+      expect(viewModel.tuningName, 'Drop D');
+    });
+
+    test('setReferencePitch retunes the active preset', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.selectTuning('open-g');
+      viewModel.setReferencePitch(442);
+
+      expect(viewModel.tuningId, 'open-g');
+      expect(
+        viewModel.tuningNotes[0].frequency,
+        closeTo(73.42 * (442 / 440), 0.01),
+      );
+    });
+
+    test('switching tuning re-runs the latest pitch immediately', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+      );
+
+      await viewModel.initialize();
+      pitchService.pushDetection(detection(frequency: 82.41, octave: 2));
+      await pumpEventQueue();
+
+      expect(viewModel.stringMatch!.stringIndex, 0);
+      expect(viewModel.stringMatch!.targetNote.label, 'E2');
+
+      await viewModel.selectTuning('drop-d');
+
+      expect(viewModel.stringMatch!.stringIndex, 0);
+      expect(viewModel.stringMatch!.targetNote.label, 'D2');
+    });
+
+    test('selecting a different tuning keeps the tapped-string lock valid',
+        () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final viewModel = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
+      );
+
+      viewModel.selectString(4);
+      await viewModel.selectTuning('drop-d');
+
+      expect(viewModel.selectedString, 4);
+    });
   });
 }

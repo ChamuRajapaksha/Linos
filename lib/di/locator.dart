@@ -41,6 +41,7 @@ abstract final class Locator {
           audioInputService: locator<AudioInputService>(),
           pitchDetectionService: locator<PitchDetectionService>(),
           stringMatcher: locator<StringMatcher>(),
+          tuningRepository: locator<TuningRepository>(),
         ),
       );
     }
