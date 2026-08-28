@@ -46,6 +46,8 @@ class _TunerViewState extends State<TunerView> {
               TunerViewState.recording => _RecordingView(
                   viewModel: widget.viewModel,
                   onOpenSettings: () => _openSettings(context),
+                  onOpenTuningPicker: () =>
+                      _openTuningPicker(context, widget.viewModel),
                 ),
               TunerViewState.permissionRequired => _PermissionView(
                   icon: Icons.mic_none,
@@ -137,10 +139,15 @@ class _LoadingView extends StatelessWidget {
 }
 
 class _RecordingView extends StatelessWidget {
-  const _RecordingView({required this.viewModel, required this.onOpenSettings});
+  const _RecordingView({
+    required this.viewModel,
+    required this.onOpenSettings,
+    required this.onOpenTuningPicker,
+  });
 
   final TunerViewModel viewModel;
   final VoidCallback onOpenSettings;
+  final VoidCallback onOpenTuningPicker;
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +162,11 @@ class _RecordingView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TunerHeader(onOpenSettings: onOpenSettings),
+          _TunerHeader(
+            onOpenSettings: onOpenSettings,
+            tuningName: viewModel.tuningName,
+            onOpenTuningPicker: onOpenTuningPicker,
+          ),
           const SizedBox(height: 28),
           _StringRail(
             notes: viewModel.tuningNotes,
@@ -183,9 +194,15 @@ class _RecordingView extends StatelessWidget {
 }
 
 class _TunerHeader extends StatelessWidget {
-  const _TunerHeader({required this.onOpenSettings});
+  const _TunerHeader({
+    required this.onOpenSettings,
+    required this.tuningName,
+    required this.onOpenTuningPicker,
+  });
 
   final VoidCallback onOpenSettings;
+  final String tuningName;
+  final VoidCallback onOpenTuningPicker;
 
   @override
   Widget build(BuildContext context) {
@@ -194,6 +211,8 @@ class _TunerHeader extends StatelessWidget {
     return Row(
       children: [
         const _Wordmark(),
+        const SizedBox(width: 12),
+        _TuningIndicator(name: tuningName, onTap: onOpenTuningPicker),
         const Spacer(),
         IconButton(
           onPressed: onOpenSettings,
@@ -201,6 +220,49 @@ class _TunerHeader extends StatelessWidget {
           icon: Icon(Icons.tune, color: palette.textMuted),
         ),
       ],
+    );
+  }
+}
+
+class _TuningIndicator extends StatelessWidget {
+  const _TuningIndicator({required this.name, required this.onTap});
+
+  final String name;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
+    return Semantics(
+      button: true,
+      label: 'Tuning, $name. Tap to change.',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: palette.accent.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: palette.accent.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name.toUpperCase(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: palette.accent,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(Icons.expand_more, size: 16, color: palette.accent),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

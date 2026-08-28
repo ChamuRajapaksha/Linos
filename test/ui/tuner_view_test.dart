@@ -209,6 +209,23 @@ void main() {
     expect(find.text('AUTO'), findsOneWidget);
   });
 
+  testWidgets('active tuning name shows on the tuner screen and opens the picker',
+      (tester) async {
+    final viewModel = await pumpTuner(tester);
+
+    expect(find.text('STANDARD'), findsOneWidget);
+
+    await viewModel.selectTuning('drop-d');
+    await tester.pump();
+
+    expect(find.text('DROP D'), findsOneWidget);
+
+    await tester.tap(find.text('DROP D'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CHOOSE TUNING'), findsOneWidget);
+  });
+
   testWidgets('reference pitch shift moves the in-tune point', (tester) async {
     final pitch = FakePitchDetectionService(FakeAudioInputService());
     final viewModel = await pumpTuner(tester, pitchService: pitch);
