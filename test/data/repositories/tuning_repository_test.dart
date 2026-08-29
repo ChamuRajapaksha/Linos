@@ -3,7 +3,7 @@ import 'package:linos/data/repositories/tuning_repository.dart';
 import 'package:linos/domain/models/tuning_preset.dart';
 
 void main() {
-  final repository = const TuningRepository();
+  final repository = TuningRepository();
 
   group('TuningRepository.listPresets', () {
     test('returns 7 presets with the same ids as TuningPreset.all', () {

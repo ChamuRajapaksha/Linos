@@ -12,6 +12,16 @@ class TuningPreset {
   final String name;
   final List<Note> notes; // open-string notes, frequencies referenced to A4 = 440
 
+  /// Constructs a note referenced to A4 = 440 from a chromatic name and octave.
+  /// Used by custom tunings and when decoding persisted tunings.
+  static Note noteFor(String name, int octave) {
+    return Note(
+      name: name,
+      octave: octave,
+      frequency: Note.frequencyFor(name, octave),
+    );
+  }
+
   static final TuningPreset standard = TuningPreset(
     id: 'standard',
     name: 'Standard',
