@@ -9,6 +9,7 @@ import '../../../../data/services/pitch_detection_service.dart';
 import '../../../../domain/models/note.dart';
 import '../../../../domain/models/pitch_detection.dart';
 import '../../../../domain/models/tuning_preset.dart';
+import '../../../../domain/use_cases/custom_tuning_validator.dart';
 import '../../../../domain/use_cases/level_calculator.dart';
 import '../../../../domain/use_cases/string_matcher.dart';
 import '../../../../domain/use_cases/tuning_status_classifier.dart';
@@ -28,13 +29,13 @@ class TunerViewModel extends ChangeNotifier {
     required PitchDetectionService pitchDetectionService,
     required StringMatcher stringMatcher,
     double a4Reference = Note.a4Reference,
-    TuningRepository tuningRepository = const TuningRepository(),
+    TuningRepository? tuningRepository,
     LastTuningStore? lastTuningStore,
   })  : _audioInputService = audioInputService,
         _pitchDetectionService = pitchDetectionService,
         _stringMatcher = stringMatcher,
         _a4Reference = a4Reference,
-        _tuningRepository = tuningRepository,
+        _tuningRepository = tuningRepository ?? TuningRepository(),
         _lastTuningStore = lastTuningStore;
 
   final AudioInputService _audioInputService;
@@ -79,6 +80,7 @@ class TunerViewModel extends ChangeNotifier {
 
   Future<void> initialize() async {
     _errorMessage = null;
+    await _tuningRepository.refreshCustomTunings();
     await _loadLastTuning();
     if (_permission == MicrophonePermissionState.granted) {
       await startCapture();
@@ -264,6 +266,40 @@ class TunerViewModel extends ChangeNotifier {
       _onPitch(_pitch!);
     }
     notifyListeners();
+  }
+
+  CustomTuningValidation validateCustomTuning({
+    required String name,
+    required List<Note> notes,
+  }) {
+    return CustomTuningValidator.validate(name: name, notes: notes);
+  }
+
+  Future<TuningPreset?> saveCustomTuning({
+    required String name,
+    required List<Note> notes,
+  }) async {
+    final validation = validateCustomTuning(name: name, notes: notes);
+    if (!validation.isValid) {
+      return null;
+    }
+    final preset =
+        await _tuningRepository.saveCustomTuning(name: name, notes: notes);
+    notifyListeners();
+    return preset;
+  }
+
+  Future<void> deleteCustomTuning(String id) async {
+    if (!_tuningRepository.isCustomId(id)) {
+      return;
+    }
+    await _tuningRepository.deleteCustomTuning(id);
+    if (_tuningId == id) {
+      _applyTuning(TuningPreset.standard.id);
+      await _persistTuning(TuningPreset.standard.id);
+    } else {
+      notifyListeners();
+    }
   }
 
   void _onStreamDone() {

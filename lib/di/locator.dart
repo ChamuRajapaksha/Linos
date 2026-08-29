@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 
+import '../data/repositories/custom_tuning_store.dart';
 import '../data/repositories/last_tuning_store.dart';
 import '../data/repositories/tuning_repository.dart';
 import '../data/services/audio_input_service.dart';
@@ -27,8 +28,17 @@ abstract final class Locator {
     if (!locator.isRegistered<StringMatcher>()) {
       locator.registerLazySingleton<StringMatcher>(StringMatcher.new);
     }
+    if (!locator.isRegistered<CustomTuningStore>()) {
+      locator.registerLazySingleton<CustomTuningStore>(
+        SharedPreferencesCustomTuningStore.new,
+      );
+    }
     if (!locator.isRegistered<TuningRepository>()) {
-      locator.registerLazySingleton<TuningRepository>(TuningRepository.new);
+      locator.registerLazySingleton<TuningRepository>(
+        () => TuningRepository(
+          customTuningStore: locator<CustomTuningStore>(),
+        ),
+      );
     }
     if (!locator.isRegistered<LastTuningStore>()) {
       locator.registerLazySingleton<LastTuningStore>(
