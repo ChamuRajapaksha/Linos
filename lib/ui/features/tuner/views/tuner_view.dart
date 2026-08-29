@@ -10,6 +10,7 @@ import '../../../../domain/models/tuning_status.dart';
 import '../../../../domain/use_cases/string_matcher.dart';
 import '../../../core/theme/linos_palette.dart';
 import '../view_models/tuner_view_model.dart';
+import 'custom_tuning_sheet.dart';
 import 'tuning_picker_sheet.dart';
 
 class TunerView extends StatefulWidget {
@@ -106,12 +107,53 @@ class _TunerViewState extends State<TunerView> {
       isScrollControlled: true,
       showDragHandle: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (context) => TuningPickerSheet(
+      builder: (sheetContext) => TuningPickerSheet(
         presets: viewModel.tuningPresets,
         selectedId: viewModel.tuningId,
         onSelected: viewModel.selectTuning,
+        onCreateCustom: () => _openCustomTuning(context, sheetContext, viewModel),
+        onDeleteCustom: (id) => _confirmDeleteCustom(context, sheetContext, viewModel, id),
       ),
     );
+  }
+
+  Future<void> _openCustomTuning(
+      BuildContext context, BuildContext sheetContext, TunerViewModel viewModel) async {
+    Navigator.of(sheetContext).pop();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (context) => CustomTuningSheet(viewModel: viewModel),
+    );
+  }
+
+  Future<void> _confirmDeleteCustom(
+      BuildContext context,
+      BuildContext sheetContext,
+      TunerViewModel viewModel,
+      String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete custom tuning?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await viewModel.deleteCustomTuning(id);
+    }
   }
 }
 
