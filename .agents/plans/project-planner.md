@@ -19,7 +19,7 @@
 | 7 | Alternate tuning data model & presets | Done | 6 |
 | 8 | Tuning-aware string matching & detection | Done | 7 |
 | 9 | Alternate tuning selection UI | Done | 8 |
-| 10 | Custom tuning support | Not Started | 9 |
+| 10 | Custom tuning support | Done | 9 |
 | 11 | Real-world validation & docs for alternate tunings | Not Started | 9 (10 if built) |
 
 Status values: `Not Started` / `In Progress` / `Blocked` / `Done`
@@ -305,24 +305,26 @@ lib/
 **Context:** Depends on M9. Stretch scope beyond the fixed preset list — lets a player define an arbitrary tuning. Skip or defer this milestone if alternate tunings only need to ship with the fixed preset list from M7.
 
 **Tasks** *(commit after each one — don't batch)*
-- [ ] UI to set a custom note + octave per string, reusing an existing note-picker component if one exists
+- [x] UI to set a custom note + octave per string, reusing an existing note-picker component if one exists
   → `feat(custom-tuning): add per-string note entry UI`
-- [ ] Validate entries (frequency range sanity, no duplicate/invalid strings)
+- [x] Validate entries (frequency range sanity, no duplicate/invalid strings)
   → `feat(custom-tuning): validate custom string entries`
-- [ ] Save and name a custom tuning locally, alongside the built-in presets from the M9 picker
+- [x] Save and name a custom tuning locally, alongside the built-in presets from the M9 picker
   → `feat(custom-tuning): save and name custom tunings`
-- [ ] Delete a saved custom tuning
+- [x] Delete a saved custom tuning
   → `feat(custom-tuning): delete saved custom tunings`
-- [ ] Feed a custom tuning through the same M8 matching/classification pipeline with no special-casing
+- [x] Feed a custom tuning through the same M8 matching/classification pipeline with no special-casing
   → `feat(custom-tuning): route custom tunings through standard matching pipeline`
-- [ ] Unit tests: create/save/select/delete a custom tuning end-to-end at the data layer
+- [x] Unit tests: create/save/select/delete a custom tuning end-to-end at the data layer
   → `test(custom-tuning): cover create/save/select/delete lifecycle`
 
 **Done when**
-- [ ] A user can create, save, select, and delete a custom tuning entirely from the UI
-- [ ] A custom tuning behaves identically to a built-in preset for matching, status, and persistence
+- [x] A user can create, save, select, and delete a custom tuning entirely from the UI
+- [x] A custom tuning behaves identically to a built-in preset for matching, status, and persistence
 
 **Wrap-up commit (only if the tasks above weren't committed individually):** `feat: support user-defined custom tunings`
+
+**Notes (completed):** Custom tunings reuse the exact `TuningPreset` model (id prefixed `custom-`, notes referenced to A4=440 via the new `TuningPreset.noteFor(name, octave)`) so they flow through the unchanged M8 `StringMatcher`/`TuningStatusClassifier` pipeline — no special-casing. `CustomTuningStore` (`lib/data/repositories/custom_tuning_store.dart`, SharedPreferences key `customTunings`, JSON `{id, name, notes:[{name, octave}]}`) persists the user set; `TuningRepository` now holds an optional store, exposes `refreshCustomTunings()`, `saveCustomTuning({name, notes})`, `deleteCustomTuning(id)`, `isCustomId(id)`, and folds customs into `listPresets()`/`getPreset()`/`tuningFor()`. `CustomTuningValidator` (`lib/domain/use_cases/`) enforces non-empty name ≤24 chars, exactly 6 strings, valid chromatic note names, octave 0–6. `TunerViewModel` gained `validateCustomTuning`, `saveCustomTuning` (returns null when invalid), and `deleteCustomTuning` (reverts to Standard if the deleted tuning was active and persists that fallback); `initialize()` refreshes customs before restoring the last tuning so a persisted custom id survives restart. UI: `CustomTuningSheet` (name field + six rows of note/octave dropdowns with inline string-error text and the existing panel/brass styling), opened from the picker's new CUSTOM › New action; `TuningPickerSheet` now splits built-ins vs customs and shows a delete IconButton (with confirm dialog) on each custom tile. `flutter analyze` clean, 346 tests passing (2 pre-existing skips: real-guitar fixtures + soak), debug APK builds. Commits landed per-task (9 code/test commits + this docs commit), so no wrap-up commit was needed. Note: custom-tuner delete sits inside the tile's single semantic button (pointer/tooltip accessible; not a separately announced action).
 
 ---
 
