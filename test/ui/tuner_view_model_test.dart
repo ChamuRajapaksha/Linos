@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:linos/data/repositories/custom_tuning_store.dart';
 import 'package:linos/data/repositories/last_tuning_store.dart';
+import 'package:linos/data/repositories/tuning_repository.dart';
 import 'package:linos/data/services/audio_input_service.dart';
 import 'package:linos/data/services/pitch_detection_service.dart';
 import 'package:linos/data/services/record_audio_input_service.dart';
@@ -9,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:linos/domain/models/frequency.dart';
 import 'package:linos/domain/models/note.dart';
 import 'package:linos/domain/models/pitch_detection.dart';
+import 'package:linos/domain/models/tuning_preset.dart';
 import 'package:linos/domain/models/tuning_status.dart';
 import 'package:linos/domain/use_cases/string_matcher.dart';
 import 'package:linos/ui/features/tuner/view_models/tuner_view_model.dart';
@@ -934,6 +937,181 @@ void main() {
       await viewModel.selectTuning('drop-d');
 
       expect(viewModel.tuningName, 'Drop D');
+    });
+  });
+
+  group('TunerViewModel custom tuning', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    TunerViewModel buildVm(
+      AudioInputService service, {
+      TuningRepository? repository,
+      LastTuningStore? lastTuningStore,
+    }) {
+      return TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: FakePitchDetectionService(service),
+        stringMatcher: const StringMatcher(),
+        tuningRepository:
+            repository ?? TuningRepository(customTuningStore: SharedPreferencesCustomTuningStore()),
+        lastTuningStore: lastTuningStore ?? SharedPreferencesLastTuningStore(),
+      );
+    }
+
+    test('validateCustomTuning rejects an empty name', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final vm = buildVm(service);
+      final result = vm.validateCustomTuning(
+        name: '',
+        notes: [
+          for (final spec in ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'])
+            TuningPreset.noteFor(
+              spec.substring(0, spec.length - 1),
+              int.parse(spec.substring(spec.length - 1)),
+            ),
+        ],
+      );
+      expect(result.isValid, isFalse);
+    });
+
+    test('saveCustomTuning adds a preset visible to the picker', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final vm = buildVm(service);
+
+      final preset = await vm.saveCustomTuning(
+        name: 'Drop C',
+        notes: [
+          for (final spec in ['C2', 'G2', 'C3', 'F3', 'A3', 'D4'])
+            TuningPreset.noteFor(
+              spec.substring(0, spec.length - 1),
+              int.parse(spec.substring(spec.length - 1)),
+            ),
+        ],
+      );
+
+      expect(preset, isNotNull);
+      expect(vm.tuningPresets.any((p) => p.id == preset!.id), isTrue);
+      expect(vm.tuningPresets.any((p) => p.name == 'Drop C'), isTrue);
+    });
+
+    test('selecting a saved custom tuning routes matching to its notes',
+        () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final pitchService = FakePitchDetectionService(service);
+      final vm = TunerViewModel(
+        audioInputService: service,
+        pitchDetectionService: pitchService,
+        stringMatcher: const StringMatcher(),
+        tuningRepository: TuningRepository(
+          customTuningStore: SharedPreferencesCustomTuningStore(),
+        ),
+        lastTuningStore: SharedPreferencesLastTuningStore(),
+      );
+      await vm.initialize();
+      final preset = await vm.saveCustomTuning(
+        name: 'Drop C',
+        notes: [
+          for (final spec in ['C2', 'G2', 'C3', 'F3', 'A3', 'D4'])
+            TuningPreset.noteFor(
+              spec.substring(0, spec.length - 1),
+              int.parse(spec.substring(spec.length - 1)),
+            ),
+        ],
+      );
+
+      await vm.selectTuning(preset!.id);
+      pitchService.pushDetection(detection(frequency: 65.41, octave: 2));
+      await pumpEventQueue();
+
+      expect(vm.tuningName, 'Drop C');
+      expect(vm.stringMatch, isNotNull);
+      expect(vm.stringMatch!.stringIndex, 0);
+      expect(vm.stringMatch!.targetNote.label, 'C2');
+    });
+
+    test('selected custom tuning persists across app restart', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final vm1 = buildVm(service);
+      await vm1.initialize();
+      final preset = await vm1.saveCustomTuning(
+        name: 'Open C',
+        notes: [
+          for (final spec in ['C2', 'G2', 'C3', 'G3', 'C4', 'E4'])
+            TuningPreset.noteFor(
+              spec.substring(0, spec.length - 1),
+              int.parse(spec.substring(spec.length - 1)),
+            ),
+        ],
+      );
+      await vm1.selectTuning(preset!.id);
+
+      final service2 = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final vm2 = buildVm(service2);
+      await vm2.initialize();
+
+      expect(vm2.tuningName, 'Open C');
+      expect(vm2.tuningNotes[0].label, 'C2');
+    });
+
+    test('deleting the active custom tuning reverts to standard', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final vm = buildVm(service);
+      await vm.initialize();
+      final preset = await vm.saveCustomTuning(
+        name: 'Temp',
+        notes: [
+          for (final spec in ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'])
+            TuningPreset.noteFor(
+              spec.substring(0, spec.length - 1),
+              int.parse(spec.substring(spec.length - 1)),
+            ),
+        ],
+      );
+      await vm.selectTuning(preset!.id);
+      expect(vm.tuningName, 'Temp');
+
+      await vm.deleteCustomTuning(preset.id);
+
+      expect(vm.tuningId, 'standard');
+      expect(vm.tuningName, 'Standard');
+      expect(vm.tuningPresets.any((p) => p.id == preset.id), isFalse);
+    });
+
+    test('deleting an inactive custom tuning keeps current selection', () async {
+      final service = FakeAudioInputService(
+        permissionState: MicrophonePermissionState.granted,
+      );
+      final vm = buildVm(service);
+      await vm.initialize();
+      final preset = await vm.saveCustomTuning(
+        name: 'Keep Me',
+        notes: [
+          for (final spec in ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'])
+            TuningPreset.noteFor(
+              spec.substring(0, spec.length - 1),
+              int.parse(spec.substring(spec.length - 1)),
+            ),
+        ],
+      );
+
+      await vm.deleteCustomTuning(preset!.id);
+
+      expect(vm.tuningId, 'standard');
+      expect(vm.tuningName, 'Standard');
     });
   });
 }
