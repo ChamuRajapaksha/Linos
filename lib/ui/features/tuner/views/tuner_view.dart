@@ -912,10 +912,16 @@ class _LevelMeter extends StatelessWidget {
   /// Position along the bar (0–1) where plucking strength is ideal.
   static const double sweetSpot = 0.65;
 
+  /// Pluck strengths counted as within the sweet spot.
+  static const double sweetSpotMin = 0.45;
+  static const double sweetSpotMax = 0.85;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
+    final bool inSweetSpot =
+        level >= sweetSpotMin && level <= sweetSpotMax;
     return Row(
       children: [
         Expanded(
@@ -954,7 +960,9 @@ class _LevelMeter extends StatelessWidget {
                             child: Container(
                               width: 2,
                               decoration: BoxDecoration(
-                                color: palette.textMuted.withValues(alpha: 0.6),
+                                color: inSweetSpot
+                                    ? palette.inTune
+                                    : palette.textMuted.withValues(alpha: 0.6),
                                 borderRadius: BorderRadius.circular(1),
                               ),
                             ),
