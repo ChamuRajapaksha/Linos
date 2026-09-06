@@ -536,7 +536,7 @@ class _StringRailItem extends StatelessWidget {
   }
 }
 
-class _HeroNote extends StatelessWidget {
+class _HeroNote extends StatefulWidget {
   const _HeroNote({
     required this.palette,
     required this.match,
@@ -547,11 +547,41 @@ class _HeroNote extends StatelessWidget {
   final StringMatch? match;
   final PitchDetection? pitch;
 
+  @override
+  State<_HeroNote> createState() => _HeroNoteState();
+}
+
+class _HeroNoteState extends State<_HeroNote>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  late final Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
   static const List<String> _ordinal = ['6TH', '5TH', '4TH', '3RD', '2ND', '1ST'];
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final LinosPalette palette = widget.palette;
+    final StringMatch? match = widget.match;
+    final PitchDetection? pitch = widget.pitch;
     final bool hasSignal = match != null;
 
     final String noteName =
@@ -602,16 +632,25 @@ class _HeroNote extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 160),
-                style: theme.textTheme.displayMedium!.copyWith(
-                  fontSize: 96,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -3,
-                  height: 1,
-                  color: heroColor,
+              AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _pulseAnimation.value,
+                    child: child,
+                  );
+                },
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 160),
+                  style: theme.textTheme.displayMedium!.copyWith(
+                    fontSize: 96,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -3,
+                    height: 1,
+                    color: heroColor,
+                  ),
+                  child: Text(noteName),
                 ),
-                child: Text(noteName),
               ),
               if (octave != null) ...[
                 const SizedBox(width: 4),
