@@ -586,17 +586,25 @@ class _HeroNoteState extends State<_HeroNote>
   }
 
   bool _wasInTune = false;
+  int? _lastActiveString;
 
   @override
   void didUpdateWidget(covariant _HeroNote oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final bool nowInTune = widget.match?.status == TuningStatus.inTune;
+    final StringMatch? current = widget.match;
+    final bool nowInTune = current?.status == TuningStatus.inTune;
     if (nowInTune && !_wasInTune) {
       _wasInTune = true;
       unawaited(Haptics.inTune());
       _pulseController.forward(from: 0);
     } else if (!nowInTune) {
       _wasInTune = false;
+    }
+    if (current != null &&
+        current.stringIndex != _lastActiveString &&
+        !_wasInTune) {
+      _lastActiveString = current.stringIndex;
+      unawaited(Haptics.stringDetected());
     }
   }
 
