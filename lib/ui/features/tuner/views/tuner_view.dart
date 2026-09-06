@@ -257,10 +257,14 @@ class _TunerHeader extends StatelessWidget {
         const SizedBox(width: 12),
         _TuningIndicator(name: tuningName, onTap: onOpenTuningPicker),
         const Spacer(),
-        IconButton(
-          onPressed: onOpenSettings,
-          tooltip: 'Tuner settings',
-          icon: Icon(Icons.tune, color: palette.textMuted),
+        _PressScale(
+          pressedScale: 0.9,
+          pressedOpacity: 0.6,
+          child: IconButton(
+            onPressed: onOpenSettings,
+            tooltip: 'Tuner settings',
+            icon: Icon(Icons.tune, color: palette.textMuted),
+          ),
         ),
       ],
     );
