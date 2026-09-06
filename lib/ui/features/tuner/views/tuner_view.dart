@@ -555,6 +555,7 @@ class _HeroNoteState extends State<_HeroNote>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
+  late final Animation<double> _glowAnimation;
 
   @override
   void initState() {
@@ -564,6 +565,9 @@ class _HeroNoteState extends State<_HeroNote>
       duration: const Duration(milliseconds: 350),
     );
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeOutCubic),
+    );
+    _glowAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeOutCubic),
     );
   }
@@ -647,11 +651,25 @@ class _HeroNoteState extends State<_HeroNote>
             textBaseline: TextBaseline.alphabetic,
             children: [
               AnimatedBuilder(
-                animation: _pulseAnimation,
+                animation: _pulseController,
                 builder: (context, child) {
-                  return Transform.scale(
-                    scale: _pulseAnimation.value,
-                    child: child,
+                  return DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: heroColor.withValues(
+                            alpha: 0.35 * _glowAnimation.value,
+                          ),
+                          blurRadius: 24 * _glowAnimation.value,
+                          spreadRadius: 6 * _glowAnimation.value,
+                        ),
+                      ],
+                    ),
+                    child: Transform.scale(
+                      scale: _pulseAnimation.value,
+                      child: child,
+                    ),
                   );
                 },
                 child: AnimatedDefaultTextStyle(
