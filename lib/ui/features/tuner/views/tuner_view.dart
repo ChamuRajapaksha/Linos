@@ -909,6 +909,9 @@ class _LevelMeter extends StatelessWidget {
 
   final double level;
 
+  /// Position along the bar (0–1) where plucking strength is ideal.
+  static const double sweetSpot = 0.65;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -941,6 +944,18 @@ class _LevelMeter extends StatelessWidget {
                                     palette.accent,
                                   ],
                                 ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            left: constraints.maxWidth * sweetSpot - 1,
+                            top: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 2,
+                              decoration: BoxDecoration(
+                                color: palette.textMuted.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(1),
                               ),
                             ),
                           ),
