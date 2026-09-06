@@ -1249,30 +1249,32 @@ class _ChoiceChipButton extends StatelessWidget {
       button: true,
       selected: selected,
       label: '$label hertz',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: selected
-                ? palette.accent.withValues(alpha: 0.18)
-                : palette.panel,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
+      child: _PressScale(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
               color: selected
-                  ? palette.accent
-                  : palette.panelBorder,
-              width: selected ? 1.6 : 1,
+                  ? palette.accent.withValues(alpha: 0.18)
+                  : palette.panel,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected
+                    ? palette.accent
+                    : palette.panelBorder,
+                width: selected ? 1.6 : 1,
+              ),
             ),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.labelLarge!.copyWith(
-              color: selected ? palette.accent : palette.textMuted,
-              fontSize: 16,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelLarge!.copyWith(
+                color: selected ? palette.accent : palette.textMuted,
+                fontSize: 16,
+              ),
             ),
           ),
         ),
