@@ -574,6 +574,20 @@ class _HeroNoteState extends State<_HeroNote>
     super.dispose();
   }
 
+  bool _wasInTune = false;
+
+  @override
+  void didUpdateWidget(covariant _HeroNote oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final bool nowInTune = widget.match?.status == TuningStatus.inTune;
+    if (nowInTune && !_wasInTune) {
+      _wasInTune = true;
+      _pulseController.forward(from: 0);
+    } else if (!nowInTune) {
+      _wasInTune = false;
+    }
+  }
+
   static const List<String> _ordinal = ['6TH', '5TH', '4TH', '3RD', '2ND', '1ST'];
 
   @override
