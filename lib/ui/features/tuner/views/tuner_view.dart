@@ -46,37 +46,38 @@ class _TunerViewState extends State<TunerView> {
             return switch (widget.viewModel.state) {
               TunerViewState.loading => const _LoadingView(),
               TunerViewState.recording => _RecordingView(
-                  viewModel: widget.viewModel,
-                  onOpenSettings: () => _openSettings(context),
-                  onOpenTuningPicker: () =>
-                      _openTuningPicker(context, widget.viewModel),
-                ),
+                viewModel: widget.viewModel,
+                onOpenSettings: () => _openSettings(context),
+                onOpenTuningPicker: () =>
+                    _openTuningPicker(context, widget.viewModel),
+              ),
               TunerViewState.permissionRequired => _PermissionView(
-                  icon: Icons.mic_none,
-                  title: 'Microphone access is needed to tune your guitar',
-                  buttonLabel: 'Enable Microphone',
-                  onPressed: widget.viewModel.requestPermission,
-                  hint: 'Linos listens for the pitch of a plucked string — '
-                      'it never records or stores audio.',
-                ),
+                icon: Icons.mic_none,
+                title: 'Microphone access is needed to tune your guitar',
+                buttonLabel: 'Enable Microphone',
+                onPressed: widget.viewModel.requestPermission,
+                hint:
+                    'Linos listens for the pitch of a plucked string — '
+                    'it never records or stores audio.',
+              ),
               TunerViewState.permissionDenied => _PermissionView(
-                  icon: Icons.mic_off,
-                  title: 'Microphone access was denied',
-                  buttonLabel: 'Enable Microphone',
-                  onPressed: widget.viewModel.requestPermission,
-                  hint: 'Tap the button to try again.',
-                ),
+                icon: Icons.mic_off,
+                title: 'Microphone access was denied',
+                buttonLabel: 'Enable Microphone',
+                onPressed: widget.viewModel.requestPermission,
+                hint: 'Tap the button to try again.',
+              ),
               TunerViewState.permissionPermanentlyDenied => _PermissionView(
-                  icon: Icons.mic_off,
-                  title: 'Microphone access is turned off',
-                  message: 'Enable it in your device settings to use the tuner.',
-                  buttonLabel: 'Open Settings',
-                  onPressed: _openAppSettings,
-                ),
+                icon: Icons.mic_off,
+                title: 'Microphone access is turned off',
+                message: 'Enable it in your device settings to use the tuner.',
+                buttonLabel: 'Open Settings',
+                onPressed: _openAppSettings,
+              ),
               TunerViewState.error => _ErrorView(
-                  message: widget.viewModel.errorMessage,
-                  onRetry: () => unawaited(widget.viewModel.initialize()),
-                ),
+                message: widget.viewModel.errorMessage,
+                onRetry: () => unawaited(widget.viewModel.initialize()),
+              ),
             };
           },
         ),
@@ -102,7 +103,9 @@ class _TunerViewState extends State<TunerView> {
   }
 
   Future<void> _openTuningPicker(
-      BuildContext context, TunerViewModel viewModel) async {
+    BuildContext context,
+    TunerViewModel viewModel,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -112,14 +115,19 @@ class _TunerViewState extends State<TunerView> {
         presets: viewModel.tuningPresets,
         selectedId: viewModel.tuningId,
         onSelected: viewModel.selectTuning,
-        onCreateCustom: () => _openCustomTuning(context, sheetContext, viewModel),
-        onDeleteCustom: (id) => _confirmDeleteCustom(context, sheetContext, viewModel, id),
+        onCreateCustom: () =>
+            _openCustomTuning(context, sheetContext, viewModel),
+        onDeleteCustom: (id) =>
+            _confirmDeleteCustom(context, sheetContext, viewModel, id),
       ),
     );
   }
 
   Future<void> _openCustomTuning(
-      BuildContext context, BuildContext sheetContext, TunerViewModel viewModel) async {
+    BuildContext context,
+    BuildContext sheetContext,
+    TunerViewModel viewModel,
+  ) async {
     Navigator.of(sheetContext).pop();
     await showModalBottomSheet<void>(
       context: context,
@@ -131,10 +139,11 @@ class _TunerViewState extends State<TunerView> {
   }
 
   Future<void> _confirmDeleteCustom(
-      BuildContext context,
-      BuildContext sheetContext,
-      TunerViewModel viewModel,
-      String id) async {
+    BuildContext context,
+    BuildContext sheetContext,
+    TunerViewModel viewModel,
+    String id,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -294,7 +303,9 @@ class _TuningIndicator extends StatelessWidget {
               decoration: BoxDecoration(
                 color: palette.accent.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: palette.accent.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: palette.accent.withValues(alpha: 0.5),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -403,8 +414,10 @@ class _StringRail extends StatelessWidget {
                 const Spacer(),
                 AnimatedContainer(
                   duration: duration,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: auto
                         ? palette.accent.withValues(alpha: 0.18)
@@ -618,7 +631,14 @@ class _HeroNoteState extends State<_HeroNote>
     }
   }
 
-  static const List<String> _ordinal = ['6TH', '5TH', '4TH', '3RD', '2ND', '1ST'];
+  static const List<String> _ordinal = [
+    '6TH',
+    '5TH',
+    '4TH',
+    '3RD',
+    '2ND',
+    '1ST',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -655,8 +675,7 @@ class _HeroNoteState extends State<_HeroNote>
       final String stringLabel = _ordinal[localMatch.stringIndex];
       final String centsText = localMatch.centsOffset >= 0 ? '+' : '−';
       caption = '$stringLabel STRING · ${localMatch.targetNote.label}';
-      cents =
-          '$centsText${localMatch.centsOffset.abs().toStringAsFixed(1)}';
+      cents = '$centsText${localMatch.centsOffset.abs().toStringAsFixed(1)}';
       statusLabel = localMatch.status.label;
     }
 
@@ -665,9 +684,9 @@ class _HeroNoteState extends State<_HeroNote>
       label: localMatch == null
           ? 'No signal. Play a string to tune.'
           : '${localMatch.targetNote.label}, '
-              '${localMatch.status.label.toLowerCase()}, '
-              '${localMatch.centsOffset.abs().toStringAsFixed(1)} cents '
-              '${localMatch.centsOffset < 0 ? 'flat' : 'sharp'}',
+                '${localMatch.status.label.toLowerCase()}, '
+                '${localMatch.centsOffset.abs().toStringAsFixed(1)} cents '
+                '${localMatch.centsOffset < 0 ? 'flat' : 'sharp'}',
       excludeSemantics: true,
       child: Column(
         children: [
@@ -760,7 +779,7 @@ class _NeedleGauge extends StatelessWidget {
       label: status == null
           ? 'Needle gauge, no reading'
           : 'Needle ${status!.label.toLowerCase()}, '
-              '${centsOffset!.abs().toStringAsFixed(1)} cents',
+                '${centsOffset!.abs().toStringAsFixed(1)} cents',
       excludeSemantics: true,
       child: SizedBox(
         height: 148,
@@ -870,7 +889,9 @@ class _NeedleGaugePainter extends CustomPainter {
       final bool isCenter = c == 0;
       final bool isMajor = c % 10 == 0;
       final double inner = radius - (isMajor ? 12 : 8);
-      final Paint paint = isCenter ? centerTick : (isMajor ? majorTick : minorTick);
+      final Paint paint = isCenter
+          ? centerTick
+          : (isMajor ? majorTick : minorTick);
       canvas.drawLine(
         center + Offset(math.cos(angle), math.sin(angle)) * inner,
         center + Offset(math.cos(angle), math.sin(angle)) * radius,
@@ -887,8 +908,7 @@ class _NeedleGaugePainter extends CustomPainter {
     canvas.drawLine(
       center,
       center +
-          Offset(math.cos(needleAngle), math.sin(needleAngle)) *
-              (radius - 16),
+          Offset(math.cos(needleAngle), math.sin(needleAngle)) * (radius - 16),
       needlePaint,
     );
 
@@ -920,76 +940,96 @@ class _LevelMeter extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
-    final bool inSweetSpot =
-        level >= sweetSpotMin && level <= sweetSpotMax;
-    return Row(
-      children: [
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: SizedBox(
-              height: 6,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(end: level.clamp(0.0, 1.0)),
-                duration: const Duration(milliseconds: 120),
-                curve: Curves.easeOut,
-                builder: (context, value, child) {
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      return Stack(
-                        children: [
-                          Container(color: palette.panelBorder),
-                          FractionallySizedBox(
-                            widthFactor: value,
-                            alignment: Alignment.centerLeft,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    palette.accent.withValues(alpha: 0.4),
-                                    palette.accent,
-                                  ],
+    final bool inSweetSpot = level >= sweetSpotMin && level <= sweetSpotMax;
+    return Semantics(
+      container: true,
+      label: _semanticLabel(inSweetSpot),
+      child: ExcludeSemantics(
+        child: Row(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: SizedBox(
+                  height: 6,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween<double>(end: level.clamp(0.0, 1.0)),
+                    duration: const Duration(milliseconds: 120),
+                    curve: Curves.easeOut,
+                    builder: (context, value, child) {
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Stack(
+                            children: [
+                              Container(color: palette.panelBorder),
+                              FractionallySizedBox(
+                                widthFactor: value,
+                                alignment: Alignment.centerLeft,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        palette.accent.withValues(alpha: 0.4),
+                                        palette.accent,
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                          Positioned(
-                            left: constraints.maxWidth * sweetSpot - 1,
-                            top: 0,
-                            bottom: 0,
-                            child: Container(
-                              width: 2,
-                              decoration: BoxDecoration(
-                                color: inSweetSpot
-                                    ? palette.inTune
-                                    : palette.textMuted.withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(1),
+                              Positioned(
+                                left: constraints.maxWidth * sweetSpot - 1,
+                                top: 0,
+                                bottom: 0,
+                                child: Container(
+                                  width: 2,
+                                  decoration: BoxDecoration(
+                                    color: inSweetSpot
+                                        ? palette.inTune
+                                        : palette.textMuted.withValues(
+                                            alpha: 0.6,
+                                          ),
+                                    borderRadius: BorderRadius.circular(1),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ],
+                            ],
+                          );
+                        },
                       );
                     },
-                  );
-                },
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        SizedBox(
-          width: 74,
-          child: Text(
-            '${(level * 100).round().toString().padLeft(3, '0')}%',
-            textAlign: TextAlign.right,
-            style: theme.textTheme.labelMedium!.copyWith(
-              fontFamily: 'monospace',
-              fontSize: 12,
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 74,
+              child: Text(
+                '${(level * 100).round().toString().padLeft(3, '0')}%',
+                textAlign: TextAlign.right,
+                style: theme.textTheme.labelMedium!.copyWith(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
+  }
+
+  String _semanticLabel(bool inSweetSpot) {
+    final int percent = (level * 100).round();
+    final String zone;
+    if (inSweetSpot) {
+      zone = 'within the sweet spot';
+    } else if (level < sweetSpotMin) {
+      zone = 'below the sweet spot, pluck a little harder';
+    } else {
+      zone = 'above the sweet spot, pluck a little softer';
+    }
+    return 'Input level, $percent percent, $zone.';
   }
 }
 
@@ -1152,100 +1192,110 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          Text('TUNER SETTINGS', style: theme.textTheme.labelLarge),
-          const SizedBox(height: 4),
-          Text(
-            'All six strings tune to this reference.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: palette.textMuted,
+            Text('TUNER SETTINGS', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 4),
+            Text(
+              'All six strings tune to this reference.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: palette.textMuted,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          ListenableBuilder(
-            listenable: widget.viewModel,
-            builder: (_, _) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'REFERENCE PITCH A4',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontSize: 11,
-                      letterSpacing: 2,
+            const SizedBox(height: 20),
+            ListenableBuilder(
+              listenable: widget.viewModel,
+              builder: (_, _) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'REFERENCE PITCH A4',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontSize: 11,
+                        letterSpacing: 2,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Semantics(
-                    container: true,
-                    label:
-                        'Reference pitch. ${_reference.toStringAsFixed(0)} hertz.',
-                    child: Row(
-                      children: [
-                        for (int i = 0; i < _options.length; i++) ...[
-                          if (i > 0) const SizedBox(width: 10),
-                          Expanded(
-                            child: _ChoiceChipButton(
-                              label: _options[i].toStringAsFixed(0),
-                              selected: _reference == _options[i],
-                              onTap: () {
-                                setState(() => _reference = _options[i]);
-                                widget.viewModel.setReferencePitch(_options[i]);
-                              },
+                    const SizedBox(height: 8),
+                    Semantics(
+                      container: true,
+                      label:
+                          'Reference pitch. ${_reference.toStringAsFixed(0)} hertz.',
+                      child: Row(
+                        children: [
+                          for (int i = 0; i < _options.length; i++) ...[
+                            if (i > 0) const SizedBox(width: 10),
+                            Expanded(
+                              child: _ChoiceChipButton(
+                                label: _options[i].toStringAsFixed(0),
+                                selected: _reference == _options[i],
+                                onTap: () {
+                                  setState(() => _reference = _options[i]);
+                                  widget.viewModel.setReferencePitch(
+                                    _options[i],
+                                  );
+                                },
+                              ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Semantics(
-                    button: true,
-                    label:
-                        'Choose tuning, currently ${widget.viewModel.tuningName}.',
-                    child: InkWell(
-                      onTap: widget.onOpenTuningPicker,
-                      borderRadius: BorderRadius.circular(12),
-                      child: ExcludeSemantics(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: palette.panel,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: palette.panelBorder),
-                          ),
-                          child: Row(
-                            children: [
-                              Text('TUNING', style: theme.textTheme.labelMedium),
-                              const Spacer(),
-                              Flexible(
-                                child: Text(
-                                  '${widget.viewModel.tuningName.toUpperCase()} · ${widget.viewModel.tuningNotes.map((n) => n.name).join('–')}',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: palette.text,
-                                    letterSpacing: 1,
+                    const SizedBox(height: 20),
+                    Semantics(
+                      button: true,
+                      label:
+                          'Choose tuning, currently ${widget.viewModel.tuningName}.',
+                      child: InkWell(
+                        onTap: widget.onOpenTuningPicker,
+                        borderRadius: BorderRadius.circular(12),
+                        child: ExcludeSemantics(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: palette.panel,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: palette.panelBorder),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'TUNING',
+                                  style: theme.textTheme.labelMedium,
+                                ),
+                                const Spacer(),
+                                Flexible(
+                                  child: Text(
+                                    '${widget.viewModel.tuningName.toUpperCase()} · ${widget.viewModel.tuningNotes.map((n) => n.name).join('–')}',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: palette.text,
+                                      letterSpacing: 1,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(Icons.chevron_right,
-                                  size: 18, color: palette.textMuted),
-                            ],
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color: palette.textMuted,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Done'),
-                  ),
-                ],
-              );
-            },
-          ),
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Done'),
+                    ),
+                  ],
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -1285,9 +1335,7 @@ class _ChoiceChipButton extends StatelessWidget {
                   : palette.panel,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: selected
-                    ? palette.accent
-                    : palette.panelBorder,
+                color: selected ? palette.accent : palette.panelBorder,
                 width: selected ? 1.6 : 1,
               ),
             ),
