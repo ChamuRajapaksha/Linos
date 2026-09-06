@@ -596,7 +596,9 @@ class _HeroNoteState extends State<_HeroNote>
     if (nowInTune && !_wasInTune) {
       _wasInTune = true;
       unawaited(Haptics.inTune());
-      _pulseController.forward(from: 0);
+      _pulseController
+        ..duration = _animDuration(context)
+        ..forward(from: 0);
     } else if (!nowInTune) {
       _wasInTune = false;
     }
