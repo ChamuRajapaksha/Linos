@@ -280,30 +280,32 @@ class _TuningIndicator extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Tuning, $name. Tap to change.',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: ExcludeSemantics(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: palette.accent.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: palette.accent.withValues(alpha: 0.5)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  name.toUpperCase(),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: palette.accent,
-                    letterSpacing: 2,
+      child: _PressScale(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: ExcludeSemantics(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: palette.accent.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: palette.accent.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name.toUpperCase(),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: palette.accent,
+                      letterSpacing: 2,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 2),
-                Icon(Icons.expand_more, size: 16, color: palette.accent),
-              ],
+                  const SizedBox(width: 2),
+                  Icon(Icons.expand_more, size: 16, color: palette.accent),
+                ],
+              ),
             ),
           ),
         ),
