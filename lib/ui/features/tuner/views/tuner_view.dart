@@ -8,6 +8,7 @@ import '../../../../domain/models/note.dart';
 import '../../../../domain/models/pitch_detection.dart';
 import '../../../../domain/models/tuning_status.dart';
 import '../../../../domain/use_cases/string_matcher.dart';
+import '../../../core/haptics/haptic_feedback.dart';
 import '../../../core/theme/linos_palette.dart';
 import '../view_models/tuner_view_model.dart';
 import 'custom_tuning_sheet.dart';
@@ -434,6 +435,7 @@ class _StringRail extends StatelessWidget {
                       inTune: inTune && active == i,
                       duration: duration,
                       onTap: () => onSelect(selected == i ? null : i),
+                      onSelectString: () => Haptics.stringSelected(),
                     ),
                   ),
                 ],
@@ -456,6 +458,7 @@ class _StringRailItem extends StatelessWidget {
     required this.inTune,
     required this.duration,
     required this.onTap,
+    required this.onSelectString,
   });
 
   final Note note;
@@ -466,6 +469,7 @@ class _StringRailItem extends StatelessWidget {
   final bool inTune;
   final Duration duration;
   final VoidCallback onTap;
+  final VoidCallback onSelectString;
 
   @override
   Widget build(BuildContext context) {
@@ -491,7 +495,10 @@ class _StringRailItem extends StatelessWidget {
       label: '$ordinal string, tune to ${note.label}',
       onTap: onTap,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          onSelectString();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(10),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
