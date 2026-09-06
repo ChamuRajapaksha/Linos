@@ -593,6 +593,7 @@ class _HeroNoteState extends State<_HeroNote>
     final bool nowInTune = widget.match?.status == TuningStatus.inTune;
     if (nowInTune && !_wasInTune) {
       _wasInTune = true;
+      unawaited(Haptics.inTune());
       _pulseController.forward(from: 0);
     } else if (!nowInTune) {
       _wasInTune = false;
