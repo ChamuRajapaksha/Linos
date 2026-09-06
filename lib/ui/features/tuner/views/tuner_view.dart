@@ -494,48 +494,50 @@ class _StringRailItem extends StatelessWidget {
       selected: isSelected,
       label: '$ordinal string, tune to ${note.label}',
       onTap: onTap,
-      child: InkWell(
-        onTap: () {
-          onSelectString();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedContainer(
-                duration: duration,
-                width: thickness,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: lineColor,
-                  borderRadius: BorderRadius.circular(thickness / 2),
-                  boxShadow: lit
-                      ? [
-                          BoxShadow(
-                            color: lineColor.withValues(alpha: 0.45),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : null,
+      child: _PressScale(
+        child: InkWell(
+          onTap: () {
+            onSelectString();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: duration,
+                  width: thickness,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: lineColor,
+                    borderRadius: BorderRadius.circular(thickness / 2),
+                    boxShadow: lit
+                        ? [
+                            BoxShadow(
+                              color: lineColor.withValues(alpha: 0.45),
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                        : null,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              AnimatedDefaultTextStyle(
-                duration: duration,
-                style: theme.textTheme.labelLarge!.copyWith(
-                  fontSize: 15,
-                  color: isSelected || isActive
-                      ? palette.text
-                      : palette.textMuted,
-                  letterSpacing: 1,
+                const SizedBox(height: 10),
+                AnimatedDefaultTextStyle(
+                  duration: duration,
+                  style: theme.textTheme.labelLarge!.copyWith(
+                    fontSize: 15,
+                    color: isSelected || isActive
+                        ? palette.text
+                        : palette.textMuted,
+                    letterSpacing: 1,
+                  ),
+                  child: Text(note.name),
                 ),
-                child: Text(note.name),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
