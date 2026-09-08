@@ -291,4 +291,54 @@ void main() {
 
     handle.dispose();
   });
+
+  testWidgets('deleting a custom tuning shows the styled confirm dialog',
+      (tester) async {
+    final viewModel = await pumpTuner(tester);
+
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('STANDARD ·'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CUSTOM'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('NEW'));
+    await tester.tap(find.text('NEW'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Name'), 'Drop C');
+    await tester.pumpAndSettle();
+
+    final save = find.widgetWithText(FilledButton, 'Save Tuning');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    expect(viewModel.tuningPresets.where((p) => p.name == 'Drop C'),
+        hasLength(1));
+
+    await tester.tap(find.textContaining('STANDARD ·'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('DROP C'), findsOneWidget);
+
+    final deleteIcon = find.byIcon(Icons.delete_outline);
+    await tester.ensureVisible(deleteIcon);
+    await tester.pumpAndSettle();
+    await tester.tap(deleteIcon);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete custom tuning?'), findsOneWidget);
+    expect(find.text('This cannot be undone.'), findsOneWidget);
+
+    final confirmButton = find.widgetWithText(FilledButton, 'Delete');
+    await tester.tap(confirmButton);
+    await tester.pumpAndSettle();
+
+    expect(viewModel.tuningPresets
+        .where((p) => p.name == 'Drop C'), isEmpty);
+    expect(find.text('CHOOSE TUNING'), findsOneWidget);
+  });
 }

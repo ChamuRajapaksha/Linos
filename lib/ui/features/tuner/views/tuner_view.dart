@@ -178,29 +178,37 @@ class _ConfirmDialogState extends State<_ConfirmDialog>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scale;
+  bool _started = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: _dialogDuration(),
+      duration: const Duration(milliseconds: 260),
       lowerBound: 0,
       upperBound: 1,
-    )..forward();
+    );
     _scale = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) {
+      return;
+    }
+    _started = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.duration = Duration.zero;
+    }
+    _controller.forward();
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  Duration _dialogDuration() {
-    return MediaQuery.disableAnimationsOf(context)
-        ? Duration.zero
-        : const Duration(milliseconds: 260);
   }
 
   @override
