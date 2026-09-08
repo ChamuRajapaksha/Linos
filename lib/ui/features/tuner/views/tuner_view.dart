@@ -167,6 +167,112 @@ class _TunerViewState extends State<TunerView> {
   }
 }
 
+class _ConfirmDialog extends StatelessWidget {
+  const _ConfirmDialog({
+    required this.title,
+    required this.message,
+    required this.confirmLabel,
+  });
+
+  final String title;
+  final String message;
+  final String confirmLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
+    final Duration duration = _animDuration(context);
+    final Color onSharp = theme.colorScheme.onTertiary;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+      child: Semantics(
+        container: true,
+        label: '$title. $message',
+        child: ExcludeSemantics(
+          child: AnimatedScale(
+            scale: 1,
+            duration: duration,
+            curve: Curves.easeOutBack,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+              decoration: BoxDecoration(
+                color: palette.panel,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: palette.panelBorder),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: palette.sharp.withValues(alpha: 0.14),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.delete_outline,
+                      color: palette.sharp,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: palette.text,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: palette.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: Text(
+                          'Cancel',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: palette.textMuted,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: palette.sharp,
+                          foregroundColor: onSharp,
+                        ),
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: Text(confirmLabel),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _LoadingView extends StatelessWidget {
   const _LoadingView();
 
