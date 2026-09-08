@@ -159,7 +159,7 @@ class _TunerViewState extends State<TunerView> {
   }
 }
 
-class _ConfirmDialog extends StatelessWidget {
+class _ConfirmDialog extends StatefulWidget {
   const _ConfirmDialog({
     required this.title,
     required this.message,
@@ -171,10 +171,42 @@ class _ConfirmDialog extends StatelessWidget {
   final String confirmLabel;
 
   @override
+  State<_ConfirmDialog> createState() => _ConfirmDialogState();
+}
+
+class _ConfirmDialogState extends State<_ConfirmDialog>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: _dialogDuration(),
+      lowerBound: 0,
+      upperBound: 1,
+    )..forward();
+    _scale = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Duration _dialogDuration() {
+    return MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 260);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
-    final Duration duration = _animDuration(context);
     final Color onSharp = theme.colorScheme.onTertiary;
 
     return Dialog(
@@ -183,12 +215,11 @@ class _ConfirmDialog extends StatelessWidget {
       insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
       child: Semantics(
         container: true,
-        label: '$title. $message',
+        label: '${widget.title}. ${widget.message}',
         child: ExcludeSemantics(
-          child: AnimatedScale(
-            scale: 1,
-            duration: duration,
-            curve: Curves.easeOutBack,
+          child: ScaleTransition(
+            scale: _scale,
+            alignment: Alignment.center,
             child: Container(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
               decoration: BoxDecoration(
@@ -216,7 +247,7 @@ class _ConfirmDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    title,
+                    widget.title,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: palette.text,
@@ -225,7 +256,7 @@ class _ConfirmDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    message,
+                    widget.message,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: palette.textMuted,
@@ -251,7 +282,7 @@ class _ConfirmDialog extends StatelessWidget {
                           foregroundColor: onSharp,
                         ),
                         onPressed: () => Navigator.of(context).pop(true),
-                        child: Text(confirmLabel),
+                        child: Text(widget.confirmLabel),
                       ),
                     ],
                   ),
