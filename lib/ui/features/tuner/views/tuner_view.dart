@@ -146,6 +146,7 @@ class _TunerViewState extends State<TunerView> {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
+      barrierDismissible: true,
       builder: (context) => _ConfirmDialog(
         title: 'Delete custom tuning?',
         message: 'This cannot be undone.',
