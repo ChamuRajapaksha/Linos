@@ -514,7 +514,6 @@ class _TuningIndicator extends StatelessWidget {
                     name.toUpperCase(),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: palette.accent,
-                      letterSpacing: 2,
                     ),
                   ),
                   const SizedBox(width: 2),
@@ -633,7 +632,6 @@ class _StringRail extends StatelessWidget {
                     auto ? 'AUTO' : _ordinal[selected!],
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: auto ? palette.accent : palette.inTune,
-                      letterSpacing: 2,
                     ),
                   ),
                 ),
