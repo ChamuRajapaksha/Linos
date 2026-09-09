@@ -89,10 +89,7 @@ class _TuningPickerSheetState extends State<TuningPickerSheet> {
                 children: [
                   Text(
                     'CUSTOM',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: palette.textMuted,
-                      letterSpacing: 2,
-                    ),
+                    style: theme.textTheme.labelSmall,
                   ),
                   const Spacer(),
                   if (widget.onCreateCustom != null)
@@ -191,9 +188,7 @@ class _TuningOptionTile extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           preset.notes.map((n) => n.name).join('\u2013'),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: palette.textMuted,
-                          ),
+                          style: theme.textTheme.labelSmall,
                         ),
                       ],
                     ),
@@ -257,7 +252,6 @@ class _TextAction extends StatelessWidget {
                 label.toUpperCase(),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: palette.accent,
-                  letterSpacing: 1.5,
                 ),
               ),
             ],
