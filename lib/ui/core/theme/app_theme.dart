@@ -59,6 +59,10 @@ class AppTheme {
         letterSpacing: 1.5,
         color: palette.textMuted,
       ),
+      labelSmall: base.labelSmall?.copyWith(
+        letterSpacing: 2,
+        color: palette.textMuted,
+      ),
     );
 
     return ThemeData(
