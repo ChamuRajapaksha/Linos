@@ -351,33 +351,40 @@ class _LoadingViewState extends State<_LoadingView>
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FadeTransition(
-            opacity: Tween<double>(begin: 0.55, end: 1).animate(_breath),
-            child: ScaleTransition(
-              scale: Tween<double>(begin: 0.985, end: 1.01).animate(_breath),
-              child: const _Wordmark(),
-            ),
+    return Semantics(
+      container: true,
+      label: 'The tuner is loading. Please wait.',
+      child: ExcludeSemantics(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FadeTransition(
+                opacity: Tween<double>(begin: 0.55, end: 1).animate(_breath),
+                child: ScaleTransition(
+                  scale:
+                      Tween<double>(begin: 0.985, end: 1.01).animate(_breath),
+                  child: const _Wordmark(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'PREPARING AUDIO',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: palette.accent,
+                  letterSpacing: 3,
+                ),
+              ),
+              const SizedBox(height: 30),
+              const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            'PREPARING AUDIO',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: palette.accent,
-              letterSpacing: 3,
-            ),
-          ),
-          const SizedBox(height: 30),
-          const SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
-          ),
-          const SizedBox(height: 16),
-        ],
+        ),
       ),
     );
   }
