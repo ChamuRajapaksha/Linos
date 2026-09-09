@@ -21,7 +21,7 @@
 | 9 | Alternate tuning selection UI | Done | 8 |
 | 10 | Custom tuning support | Done | 9 |
 | 11 | Real-world validation & docs for alternate tunings | Not Started | 9 (10 if built) |
-| 12 | UI micro-polish follow-ups (design review items) | In Progress | 5 |
+| 12 | UI micro-polish follow-ups (design review items) | Done | 5 |
 
 Status values: `Not Started` / `In Progress` / `Blocked` / `Done`
 
@@ -377,15 +377,15 @@ lib/
   → `feat(tuner): breathing pulse on wordmark during loading` · `feat(tuner): honor reduced-motion for loading pulse` · `feat(tuner): add preparing-audio caption to loading view` · `feat(tuner): announce loading state to screen readers`
 - [x] Fix stale `@DESIGN.md` reference: wrote `DESIGN.md` from the design tokens and noted the theme code (`lib/ui/core/theme/`) as authoritative if the doc drifts
   → `docs: add DESIGN.md capturing the Linos design system` · `docs: note theme code as authoritative design source in AGENTS.md`
-- [ ] Unify `labelSmall` micro-label styling in `AppTheme` (8 manual `letterSpacing`/`fontSize`/`color` overrides today across `tuner_view.dart`, `tuning_picker_sheet.dart`, `custom_tuning_sheet.dart`)
-  → audit usages · define `labelSmall` in the text theme · drop redundant overrides · keep semantic color overrides (accent/destructive)
+- [x] Unify `labelSmall` micro-label styling in `AppTheme` (8 manual `letterSpacing`/`fontSize`/`color` overrides today across `tuner_view.dart`, `tuning_picker_sheet.dart`, `custom_tuning_sheet.dart`)
+  → `feat(theme): define labelSmall with unified micro-label tracking` · `refactor(tuner): drop redundant labelSmall tracking overrides` · `refactor(tuning-picker): inherit unified labelSmall style`
 
 **Done when**
-- [ ] All micro-labels share one size/tracking definition in `AppTheme`; only semantic colors differ per usage
-- [ ] No visual regression on the tuner screen, settings, picker, or custom-tuning sheet
-- [ ] `flutter analyze` clean and the full test suite passes (347 tests at start of M12)
+- [x] All micro-labels share one size/tracking definition in `AppTheme`; only semantic colors differ per usage
+- [x] No visual regression on the tuner screen, settings, picker, or custom-tuning sheet
+- [x] `flutter analyze` clean and the full test suite passes (347 tests at start of M12)
 
-**Status:** In Progress — items 1–7 complete and committed; item 8 (unified `labelSmall` theme) is the remaining step.
+**Status:** Done — all eight design-review items complete. `AppTheme` now defines `labelSmall` (tracking 2, muted text); per-usage overrides were dropped where they matched the theme default, keeping only semantic colors (`accent`/`inTune`/`sharp`/`text`) and deliberately different emphasis (hero caption tracking 3, compact settings-row inline tracking 1).
 
 ---
 
