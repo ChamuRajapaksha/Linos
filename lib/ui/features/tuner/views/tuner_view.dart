@@ -304,23 +304,55 @@ class _ConfirmDialogState extends State<_ConfirmDialog>
   }
 }
 
-class _LoadingView extends StatelessWidget {
+class _LoadingView extends StatefulWidget {
   const _LoadingView();
 
   @override
+  State<_LoadingView> createState() => _LoadingViewState();
+}
+
+class _LoadingViewState extends State<_LoadingView>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _breath;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _breath = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _Wordmark(),
-          SizedBox(height: 40),
-          SizedBox(
+          FadeTransition(
+            opacity: Tween<double>(begin: 0.55, end: 1).animate(_breath),
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.985, end: 1.01).animate(_breath),
+              child: const _Wordmark(),
+            ),
+          ),
+          const SizedBox(height: 40),
+          const SizedBox(
             width: 22,
             height: 22,
             child: CircularProgressIndicator(strokeWidth: 2.5),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
         ],
       ),
     );
