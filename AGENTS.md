@@ -34,3 +34,4 @@
 
 - Always follow the UI design system when creating or reviewing components or pages.
 - Design System: @DESIGN.md
+- The implemented source of truth lives in `lib/ui/core/theme/` (`linos_palette.dart` + `app_theme.dart`); if code and DESIGN.md drift, follow the code.
