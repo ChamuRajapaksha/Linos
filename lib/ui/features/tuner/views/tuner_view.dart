@@ -349,6 +349,8 @@ class _LoadingViewState extends State<_LoadingView>
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -360,7 +362,15 @@ class _LoadingViewState extends State<_LoadingView>
               child: const _Wordmark(),
             ),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 10),
+          Text(
+            'PREPARING AUDIO',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: palette.accent,
+              letterSpacing: 3,
+            ),
+          ),
+          const SizedBox(height: 30),
           const SizedBox(
             width: 22,
             height: 22,
