@@ -315,6 +315,7 @@ class _LoadingViewState extends State<_LoadingView>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _breath;
+  bool _started = false;
 
   @override
   void initState() {
@@ -324,6 +325,19 @@ class _LoadingViewState extends State<_LoadingView>
       duration: const Duration(milliseconds: 1400),
     );
     _breath = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) {
+      return;
+    }
+    _started = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+      return;
+    }
     _controller.repeat(reverse: true);
   }
 
