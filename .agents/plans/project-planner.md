@@ -21,6 +21,7 @@
 | 9 | Alternate tuning selection UI | Done | 8 |
 | 10 | Custom tuning support | Done | 9 |
 | 11 | Real-world validation & docs for alternate tunings | Not Started | 9 (10 if built) |
+| 12 | UI micro-polish follow-ups (design review items) | In Progress | 5 |
 
 Status values: `Not Started` / `In Progress` / `Blocked` / `Done`
 
@@ -354,6 +355,37 @@ lib/
 - [ ] Docs updated
 
 **Wrap-up commit (only if the tasks above weren't committed individually):** `feat: validate and document alternate tuning support`
+
+---
+
+## Milestone 12 — UI Micro-Polish Follow-ups (design review items)
+
+**Context:** Depends on M5. A design-review pass produced eight small UI follow-ups for the tuner screen. Seven are complete; the eighth (a unified `labelSmall` micro-label theme) is the only work left. Do not expand scope — these items are deliberately narrow UI-only changes to `lib/ui/features/tuner/` and `lib/ui/core/theme/`.
+
+**Tasks** *(commit after each one — items 1–7 done, item 8 open)*
+- [x] In-tune "success moment": pulse + glowing halo on the hero note when a string comes into tune, honoring reduced motion
+  → `feat(tuner): pulse the hero note when it transitions to in-tune` · `feat(tuner): add glowing halo around hero note on in-tune` · `feat(tuner): honor reduced-motion for in-tune pulse animation`
+- [x] Haptic feedback: centralized `Haptics` helper wired to string auto-detection, manual string selection, and the in-tune reward
+  → `feat(haptics): add centralized haptic feedback helper` · `feat(tuner): haptic when auto-detection locks onto a string` · `feat(tuner): haptic on manual string selection` · `feat(tuner): haptic feedback when a string comes into tune`
+- [x] Press micro-interactions: reusable `_PressScale` wrapper (scale + optional opacity) on string rail items, tuning indicator, settings icon, and choice chips
+  → `feat(ui): add reusable press-scale micro-interaction wrapper` · `feat(tuner): scale down string rail items on press` · `feat(tuner): press feedback on tuning indicator pill` · `feat(tuner): opacity pulse on settings icon press` · `feat(tuner): squeeze choice chips on press`
+- [x] Level meter sweet-spot marker at 65% that turns emerald inside the 45–85% zone, with a screen-reader announcement
+  → `feat(tuner): add sweet-spot marker to level meter` · `feat(tuner): turn sweet-spot marker green when level is ideal` · `feat(tuner): expose level sweet-spot state to screen readers`
+- [x] Styled confirm dialog for deleting custom tunings (panel/ember design tokens, spring-in entrance, reduced-motion safe) replacing the stock `AlertDialog`, plus a widget test for the full delete flow
+  → `feat(tuner): add styled confirm dialog reusing design tokens` · `feat(tuner): replace delete AlertDialog with styled confirm dialog` · `feat(tuner): keep confirm dialog barrier-dismissible` · `feat(tuner): spring-in the confirm dialog on open` · `fix(tuner): read reduced-motion setting after init for dialog animation`
+- [x] Loading view polish: breathing pulse on the wordmark, "PREPARING AUDIO" caption, reduced-motion support, screen-reader announcement
+  → `feat(tuner): breathing pulse on wordmark during loading` · `feat(tuner): honor reduced-motion for loading pulse` · `feat(tuner): add preparing-audio caption to loading view` · `feat(tuner): announce loading state to screen readers`
+- [x] Fix stale `@DESIGN.md` reference: wrote `DESIGN.md` from the design tokens and noted the theme code (`lib/ui/core/theme/`) as authoritative if the doc drifts
+  → `docs: add DESIGN.md capturing the Linos design system` · `docs: note theme code as authoritative design source in AGENTS.md`
+- [ ] Unify `labelSmall` micro-label styling in `AppTheme` (8 manual `letterSpacing`/`fontSize`/`color` overrides today across `tuner_view.dart`, `tuning_picker_sheet.dart`, `custom_tuning_sheet.dart`)
+  → audit usages · define `labelSmall` in the text theme · drop redundant overrides · keep semantic color overrides (accent/destructive)
+
+**Done when**
+- [ ] All micro-labels share one size/tracking definition in `AppTheme`; only semantic colors differ per usage
+- [ ] No visual regression on the tuner screen, settings, picker, or custom-tuning sheet
+- [ ] `flutter analyze` clean and the full test suite passes (347 tests at start of M12)
+
+**Status:** In Progress — items 1–7 complete and committed; item 8 (unified `labelSmall` theme) is the remaining step.
 
 ---
 
