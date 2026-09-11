@@ -7,6 +7,7 @@ import '../../../core/theme/linos_palette.dart';
 import '../../chords/view_models/chord_sheet_view_model.dart';
 import '../../../../domain/models/chord_sheet.dart';
 import '../../../../domain/models/song.dart';
+import 'chord_diagram_sheet.dart';
 
 /// Displays the chord sheet for a [Song].
 class ChordSheetView extends StatefulWidget {
@@ -238,8 +239,12 @@ class _WordChordColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        final chord = wordChord.chord;
+        if (chord != null) {
+          unawaited(showChordDiagram(context, chordName: chord));
+        }
         onTap(wordChord.chord);
-        Haptics.stringSelected();
+        unawaited(Haptics.selectionTap());
       },
       behavior: HitTestBehavior.opaque,
       child: Padding(
