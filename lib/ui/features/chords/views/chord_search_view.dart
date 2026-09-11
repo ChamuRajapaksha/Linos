@@ -237,7 +237,7 @@ class _ResultsList extends StatelessWidget {
           child: _SongResultTile(
             song: song,
             onTap: () {
-              Haptics.stringSelected();
+              Haptics.selectionTap();
               onSelect(song);
             },
           ),

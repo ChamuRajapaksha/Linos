@@ -11,6 +11,9 @@ abstract final class Haptics {
   /// A light tick, e.g. when the user manually selects a string.
   static Future<void> stringSelected() => HapticFeedback.selectionClick();
 
+  /// A light confirmation, e.g. selecting a search result or chord.
+  static Future<void> selectionTap() => HapticFeedback.lightImpact();
+
   /// A stronger confirmation, e.g. when a string comes into tune.
   static Future<void> inTune() => HapticFeedback.mediumImpact();
 }
