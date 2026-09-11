@@ -94,6 +94,28 @@ class AppTheme {
           textStyle: text.labelLarge,
         ),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: palette.panel,
+        indicatorColor: palette.accent.withValues(alpha: 0.18),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? palette.accent
+                : palette.textMuted,
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontSize: 12,
+            letterSpacing: 1.2,
+            fontWeight:
+                states.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w400,
+            color: states.contains(WidgetState.selected)
+                ? palette.accent
+                : palette.textMuted,
+          ),
+        ),
+      ),
     );
   }
 }

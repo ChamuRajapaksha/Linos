@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../di/locator.dart';
+import '../features/chords/view_models/song_search_view_model.dart';
 import '../features/tuner/view_models/tuner_view_model.dart';
-import '../features/tuner/views/tuner_view.dart';
+import 'navigation/app_shell.dart';
 import 'theme/app_theme.dart';
 
 class LinosApp extends StatelessWidget {
@@ -15,7 +16,10 @@ class LinosApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: TunerView(viewModel: locator<TunerViewModel>()),
+      home: AppShell(
+        tunerViewModel: locator<TunerViewModel>(),
+        searchViewModel: locator<SongSearchViewModel>(),
+      ),
     );
   }
 }
