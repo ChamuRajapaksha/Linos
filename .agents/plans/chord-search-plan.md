@@ -8,7 +8,7 @@
 
 | # | Milestone | Status | Depends on |
 |---|-----------|--------|------------|
-| 1 | Chord search feature | Not Started | Tuner M5, M12 |
+| 1 | Chord search feature | Done | Tuner M5, M12 |
 
 Status values: `Not Started` / `In Progress` / `Blocked` / `Done`
 
@@ -87,50 +87,50 @@ lib/
 
 **Tasks** *(commit after each one — don't batch)*
 
-- [ ] Extract `_PressScale` → `PressScale` and `_Wordmark` → `Wordmark(label: default 'TUNER')` into `lib/ui/core/widgets/`; update `tuner_view.dart` and sheets to import them
+- [x] Extract `_PressScale` → `PressScale` and `_Wordmark` → `Wordmark(label: default 'TUNER')` into `lib/ui/core/widgets/`; update `tuner_view.dart` and sheets to import them
   → `refactor(ui): extract shared PressScale and Wordmark widgets to core`
 
-- [ ] Domain models: `Song{id, title, artist}` + `ChordSheet{title, artist, key?, lines}` with line types `SongSection` (`[Chorus]`) and `LyricLine{List<WordChord>}`; add unit tests
+- [x] Domain models: `Song{id, title, artist}` + `ChordSheet{title, artist, key?, lines}` with line types `SongSection` (`[Chorus]`) and `LyricLine{List<WordChord>}`; add unit tests
   → `feat(chords-model): add Song and ChordSheet domain models`
 
-- [ ] Abstract repository interfaces: `SongSearchRepository` (`Future<List<Song>> search(String query)`) and `ChordSheetRepository` (`Future<ChordSheet> fetch(Song song)`)
+- [x] Abstract repository interfaces: `SongSearchRepository` (`Future<List<Song>> search(String query)`) and `ChordSheetRepository` (`Future<ChordSheet> fetch(Song song)`)
   → `feat(chords-data): define song search and chord sheet repository interfaces`
 
-- [ ] Mock implementations + sample catalog: ~15–20 songs filtered case-insensitively by title or artist; bundled sheets with verse/chorus sections covering ~12 chords; unit tests
+- [x] Mock implementations + sample catalog: ~15–20 songs filtered case-insensitively by title or artist; bundled sheets with verse/chorus sections covering ~12 chords; unit tests
   → `feat(chords-data): add mock repositories with sample song catalog`
 
-- [ ] `SongSearchViewModel`: mirrors `TunerViewModel` pattern — `ChangeNotifier`, `SongSearchState` enum (`idle/loading/results/empty/error`), 300ms debounced query, `clear()`, `selectSong()`; unit tests with fakes
+- [x] `SongSearchViewModel`: mirrors `TunerViewModel` pattern — `ChangeNotifier`, `SongSearchState` enum (`idle/loading/results/empty/error`), 300ms debounced query, `clear()`, `selectSong()`; unit tests with fakes
   → `feat(chords-vm): add debounced song search view model`
 
-- [ ] `ChordSheetViewModel`: holds `ChordSheet?`, loading/error state, `selectChord(name)` for the diagram; unit tests
+- [x] `ChordSheetViewModel`: holds `ChordSheet?`, loading/error state, `selectChord(name)` for the diagram; unit tests
   → `feat(chords-vm): add chord sheet view model`
 
-- [ ] `AppShell` bottom navigation: Material 3 `NavigationBar` themed from palette (panel bg, brass active indicator, hairline top border, reduced-motion aware); refactor `linos_app.dart` to `home: AppShell`; register repos/services/VMs in `lib/di/locator.dart`; tabs: Tuner (`Icons.tune`) / Chords (`Icons.music_note`); widget test for tab switching
+- [x] `AppShell` bottom navigation: Material 3 `NavigationBar` themed from palette (panel bg, brass active indicator, hairline top border, reduced-motion aware); refactor `linos_app.dart` to `home: AppShell`; register repos/services/VMs in `lib/di/locator.dart`; tabs: Tuner (`Icons.tune`) / Chords (`Icons.music_note`); widget test for tab switching
   → `feat(navigation): add Tuner/Chords tab shell`
 
-- [ ] Chord search screen UI: LINOS·CHORDS wordmark header, search `TextField` (12px filled, brass 2px focus, search icon + clear button), `SongResultTile` (title, artist, chevron, `PressScale`, `InkWell` ripple, brass selection accents), results `ListView`; widget tests for idle/results/loading/empty/error states
+- [x] Chord search screen UI: LINOS·CHORDS wordmark header, search `TextField` (12px filled, brass 2px focus, search icon + clear button), `SongResultTile` (title, artist, chevron, `PressScale`, `InkWell` ripple, brass selection accents), results `ListView`; widget tests for idle/results/loading/empty/error states
   → `feat(chords-ui): add chord search screen with results list`
 
-- [ ] Search experience polish: idle state with "Popular searches" chips (reuse chip style), empty state themed icon + message, error state with retry (mirror `_ErrorView` pattern), haptic on result tap via `haptic_feedback.dart` addition
+- [x] Search experience polish: idle state with "Popular searches" chips (reuse chip style), empty state themed icon + message, error state with retry (mirror `_ErrorView` pattern), haptic on result tap via `haptic_feedback.dart` addition
   → `feat(chords-ui): polish search states and interactions`
 
-- [ ] Chord-sheet viewer UI: header panel (song title/artist, key chip), scrollable `LyricLine` rows (`chord above word`, monospace chords in brass, lyric text warm off-white), `SongSection` markers (`labelLarge` brass), back navigation, reduced-motion honored; widget tests
+- [x] Chord-sheet viewer UI: header panel (song title/artist, key chip), scrollable `LyricLine` rows (`chord above word`, monospace chords in brass, lyric text warm off-white), `SongSection` markers (`labelLarge` brass), back navigation, reduced-motion honored; widget tests
   → `feat(chords-ui): add chord sheet reader with chords over lyrics`
 
-- [ ] Chord diagram on tap: tapping a chord opens a bottom sheet with a custom-painted mini fretboard (dot/barre rendering); bundled `chord_shape.dart` data map (~8–12 common open/barre shapes: A, Am, C, D, Dm, E, Em, G, F) using `panel`/`accent`/`inTune` tokens; widget tests
+- [x] Chord diagram on tap: tapping a chord opens a bottom sheet with a custom-painted mini fretboard (dot/barre rendering); bundled `chord_shape.dart` data map (~8–12 common open/barre shapes: A, Am, C, D, Dm, E, Em, G, F) using `panel`/`accent`/`inTune` tokens; widget tests
   → `feat(chords-ui): add chord diagram on chord tap`
 
-- [ ] Final verification: full `flutter analyze` + `flutter test`; resolve any failures or blockers found
+- [x] Final verification: full `flutter analyze` + `flutter test`; resolve any failures or blockers found
   → `chore(chords): run full analyze and test suite`
 
 **Done when**
 
-- [ ] Bottom navigation switches between Tuner and Chords; selecting Chords stops the tuner/mic
-- [ ] Searching by song title or artist returns a filtered song list; tap opens a chord sheet
-- [ ] Chord sheets render chords above the correct lyric words with brass section markers
-- [ ] Tapping a chord shows a mini fretboard diagram
-- [ ] All states (idle/loading/results/empty/error) handled with `Semantics` labels and reduced-motion support
-- [ ] `flutter analyze` clean and the existing tuner test suite still passes
+- [x] Bottom navigation switches between Tuner and Chords; selecting Chords stops the tuner/mic
+- [x] Searching by song title or artist returns a filtered song list; tap opens a chord sheet
+- [x] Chord sheets render chords above the correct lyric words with brass section markers
+- [x] Tapping a chord shows a mini fretboard diagram
+- [x] All states (idle/loading/results/empty/error) handled with `Semantics` labels and reduced-motion support
+- [x] `flutter analyze` clean and the existing tuner test suite still passes
 
 **Wrap-up commit (only if the tasks above weren't committed individually):** `feat: add chord search and chord sheet reader`
 
