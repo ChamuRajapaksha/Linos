@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../theme/linos_palette.dart';
-import '../widgets/wordmark.dart';
 import '../../features/tuner/views/tuner_view.dart';
 import '../../features/tuner/view_models/tuner_view_model.dart';
 import '../../features/chords/view_models/song_search_view_model.dart';
+import '../../features/chords/views/chord_search_view.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({
@@ -28,7 +28,7 @@ class _AppShellState extends State<AppShell> {
     return Scaffold(
       body: switch (_index) {
         0 => TunerView(viewModel: widget.tunerViewModel),
-        1 => const _ChordsTabPlaceholder(),
+        1 => ChordSearchView(viewModel: widget.searchViewModel),
         _ => throw StateError('Invalid tab index'),
       },
       bottomNavigationBar: Column(
@@ -43,34 +43,6 @@ class _AppShellState extends State<AppShell> {
               NavigationDestination(icon: Icon(Icons.music_note), label: 'Chords'),
             ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChordsTabPlaceholder extends StatelessWidget {
-  const _ChordsTabPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(child: Wordmark(label: 'CHORDS')),
-          const Spacer(),
-          Center(
-            child: Text(
-              'Chord search coming soon.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: palette.textMuted,
-              ),
-            ),
-          ),
-          const Spacer(),
         ],
       ),
     );

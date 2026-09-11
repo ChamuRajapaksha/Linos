@@ -144,10 +144,10 @@ void main() {
     await pumpShell(tester, audio: audio, tunerViewModel: tunerViewModel);
 
     expect(find.text('Play a string to tune'), findsOneWidget);
-    expect(find.text('Chord search coming soon.'), findsNothing);
+    expect(find.text('Search by title or artist'), findsNothing);
   });
 
-  testWidgets('switching to Chords stops the mic and shows placeholder',
+  testWidgets('switching to Chords stops the mic and shows the search screen',
       (tester) async {
     final audio = FakeAudioInputService();
     final tunerViewModel = TunerViewModel(
@@ -162,7 +162,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.music_note));
     await tester.pump();
 
-    expect(find.text('Chord search coming soon.'), findsOneWidget);
+    expect(find.text('Search by title or artist'), findsOneWidget);
     expect(find.text('Play a string to tune'), findsNothing);
     expect(audio.stopCalls, greaterThanOrEqualTo(1));
   });
