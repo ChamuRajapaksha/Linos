@@ -10,6 +10,8 @@ import '../../../../domain/models/tuning_status.dart';
 import '../../../../domain/use_cases/string_matcher.dart';
 import '../../../core/haptics/haptic_feedback.dart';
 import '../../../core/theme/linos_palette.dart';
+import '../../../core/widgets/press_scale.dart';
+import '../../../core/widgets/wordmark.dart';
 import '../view_models/tuner_view_model.dart';
 import 'custom_tuning_sheet.dart';
 import 'tuning_picker_sheet.dart';
@@ -364,7 +366,7 @@ class _LoadingViewState extends State<_LoadingView>
                 child: ScaleTransition(
                   scale:
                       Tween<double>(begin: 0.985, end: 1.01).animate(_breath),
-                  child: const _Wordmark(),
+                  child: const Wordmark(),
                 ),
               ),
               const SizedBox(height: 10),
@@ -462,11 +464,11 @@ class _TunerHeader extends StatelessWidget {
     final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
     return Row(
       children: [
-        const _Wordmark(),
+        const Wordmark(),
         const SizedBox(width: 12),
         _TuningIndicator(name: tuningName, onTap: onOpenTuningPicker),
         const Spacer(),
-        _PressScale(
+        PressScale(
           pressedScale: 0.9,
           pressedOpacity: 0.6,
           child: IconButton(
@@ -493,7 +495,7 @@ class _TuningIndicator extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Tuning, $name. Tap to change.',
-      child: _PressScale(
+      child: PressScale(
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
@@ -528,37 +530,6 @@ class _TuningIndicator extends StatelessWidget {
   }
 }
 
-class _Wordmark extends StatelessWidget {
-  const _Wordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'LINOS',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: 5,
-            color: palette.text,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          'TUNER',
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: palette.accent,
-            letterSpacing: 3,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _StringRail extends StatelessWidget {
   const _StringRail({
     required this.notes,
@@ -588,7 +559,7 @@ class _StringRail extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
-    final Duration duration = _animDuration(context);
+    final Duration duration = animDuration(context);
 
     final bool auto = selected == null;
 
@@ -711,7 +682,7 @@ class _StringRailItem extends StatelessWidget {
       selected: isSelected,
       label: '$ordinal string, tune to ${note.label}',
       onTap: onTap,
-      child: _PressScale(
+      child: PressScale(
         child: InkWell(
           onTap: () {
             onSelectString();
@@ -816,7 +787,7 @@ class _HeroNoteState extends State<_HeroNote>
       _wasInTune = true;
       unawaited(Haptics.inTune());
       _pulseController
-        ..duration = _animDuration(context)
+        ..duration = animDuration(context)
         ..forward(from: 0);
     } else if (!nowInTune) {
       _wasInTune = false;
@@ -968,7 +939,7 @@ class _NeedleGauge extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final LinosPalette palette = LinosPalette.forBrightness(theme.brightness);
-    final Duration duration = _animDuration(context);
+    final Duration duration = animDuration(context);
 
     final double target = centsOffset == null ? 0 : centsOffset!.clamp(-50, 50);
 
@@ -1285,7 +1256,7 @@ class _PermissionView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const _Wordmark(),
+            const Wordmark(),
             const SizedBox(height: 40),
             Icon(icon, size: 44, color: palette.textMuted),
             const SizedBox(height: 16),
@@ -1335,7 +1306,7 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const _Wordmark(),
+            const Wordmark(),
             const SizedBox(height: 40),
             Icon(Icons.error_outline, size: 44, color: palette.textMuted),
             const SizedBox(height: 16),
@@ -1520,7 +1491,7 @@ class _ChoiceChipButton extends StatelessWidget {
       button: true,
       selected: selected,
       label: '$label hertz',
-      child: _PressScale(
+      child: PressScale(
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
@@ -1550,61 +1521,4 @@ class _ChoiceChipButton extends StatelessWidget {
       ),
     );
   }
-}
-
-class _PressScale extends StatefulWidget {
-  const _PressScale({
-    required this.child,
-    this.pressedScale = 0.96,
-    this.pressedOpacity = 1,
-  });
-
-  final Widget child;
-  final double pressedScale;
-  final double pressedOpacity;
-
-  @override
-  State<_PressScale> createState() => _PressScaleState();
-}
-
-class _PressScaleState extends State<_PressScale> {
-  bool _pressed = false;
-
-  void _setPressed(bool value) {
-    if (_pressed != value) {
-      setState(() => _pressed = value);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Duration duration = _pressDuration(context);
-    return Listener(
-      onPointerDown: (_) => _setPressed(true),
-      onPointerUp: (_) => _setPressed(false),
-      onPointerCancel: (_) => _setPressed(false),
-      child: AnimatedScale(
-        scale: _pressed ? widget.pressedScale : 1,
-        duration: duration,
-        curve: Curves.easeOut,
-        child: AnimatedOpacity(
-          opacity: _pressed ? widget.pressedOpacity : 1,
-          duration: duration,
-          child: widget.child,
-        ),
-      ),
-    );
-  }
-}
-
-Duration _pressDuration(BuildContext context) {
-  return MediaQuery.disableAnimationsOf(context)
-      ? Duration.zero
-      : const Duration(milliseconds: 90);
-}
-
-Duration _animDuration(BuildContext context) {
-  return MediaQuery.disableAnimationsOf(context)
-      ? Duration.zero
-      : const Duration(milliseconds: 220);
 }
