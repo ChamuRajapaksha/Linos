@@ -10,7 +10,7 @@
 |---|-----------|--------|------------|
 | 0 | Chord search feature (Phase 1) | Done | — |
 | 1 | Backend proxy (Dart Shelf + SQLite + UG scraper) | Done | — |
-| 2 | Flutter real API client (`http` + repos) | Not Started | M1 |
+| 2 | Flutter real API client (`http` + repos) | Done | M1 |
 | 3 | List pagination (infinite scroll) | Not Started | M2 |
 | 4 | Transposition | Not Started | — |
 | 5 | Autoscroll / playback | Not Started | — |
@@ -140,32 +140,32 @@ The client's `ChordSheet` domain model is reused verbatim by the backend respons
 
 **Tasks**
 
-- [ ] Add `http` to `pubspec.yaml` root dependencies
+- [x] Add `http` to `pubspec.yaml` root dependencies
   → `chore(deps): add http package`
 
-- [ ] `lib/data/api/api_config.dart` (`String.fromEnvironment` base URL, request/connect timeouts) + `lib/data/api/api_client.dart` (GET returning decoded JSON, throws typed `ApiException` on non-2xx/network errors, respects timeout)
+- [x] `lib/data/api/api_config.dart` (`String.fromEnvironment` base URL, request/connect timeouts) + `lib/data/api/api_client.dart` (GET returning decoded JSON, throws typed `ApiException` on non-2xx/network errors, respects timeout)
   → `feat(api): add api config and http client wrapper`
 
-- [ ] `lib/data/api/api_models.dart`: `SearchResponse.fromJson` → `List<Song>`, `ChordSheetDto` → `ChordSheet` (sealed `SheetLine` parsing from `type` discriminator), key/title/artist
+- [x] `lib/data/api/api_models.dart`: `SearchResponse.fromJson` → `List<Song>`, `ChordSheetDto` → `ChordSheet` (sealed `SheetLine` parsing from `type` discriminator), key/title/artist
   → `feat(api): add json parsing for search and chord sheet responses`
 
-- [ ] `ApiSongSearchRepository implements SongSearchRepository` — calls `/api/search?query=`, maps to songs, propagates `ApiException`
+- [x] `ApiSongSearchRepository implements SongSearchRepository` — calls `/api/search?query=`, maps to songs, propagates `ApiException`
   → `feat(api): add api song search repository`
 
-- [ ] `ApiChordSheetRepository implements ChordSheetRepository` — calls `/api/songs/{id}`, maps DTO → `ChordSheet`
+- [x] `ApiChordSheetRepository implements ChordSheetRepository` — calls `/api/songs/{id}`, maps DTO → `ChordSheet`
   → `feat(api): add api chord sheet repository`
 
-- [ ] DI (`lib/di/locator.dart`): register `ApiSongSearchRepository`/`ApiChordSheetRepository` against the abstract interfaces (guarded registrations, mocks still available); unit/widget tests unaffected (they inject fakes)
+- [x] DI (`lib/di/locator.dart`): register `ApiSongSearchRepository`/`ApiChordSheetRepository` against the abstract interfaces (guarded registrations, mocks still available); unit/widget tests unaffected (they inject fakes)
   → `feat(api): register api repositories in locator`
 
-- [ ] Tests: parse DTOs from fixture JSON; repository tests against an in-process `HttpServer` (dart:io) returning canned JSON; error propagation (500, timeout, malformed body)
+- [x] Tests: parse DTOs from fixture JSON; repository tests against an in-process `HttpServer` (dart:io) returning canned JSON; error propagation (500, timeout, malformed body)
   → `test(api): cover client repositories and json parsing`
 
 **Done when**
 
-- [ ] Client makes real HTTP calls against the backend contract
-- [ ] Typed errors surface cleanly (no raw exceptions in view models beyond `ApiException`)
-- [ ] `flutter analyze` clean, `flutter test` passes
+- [x] Client makes real HTTP calls against the backend contract
+- [x] Typed errors surface cleanly (no raw exceptions in view models beyond `ApiException`)
+- [x] `flutter analyze` clean, `flutter test` passes
 
 ---
 
