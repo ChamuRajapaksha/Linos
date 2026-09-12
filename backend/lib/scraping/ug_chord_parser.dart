@@ -46,6 +46,7 @@ class UgChordParser {
   /// Parse raw ChordPro content (with section markers and chord tokens) into
   /// sheet lines. Public so it can be unit-tested directly.
   List<SongLine> parseChordPro(String content) {
+    content = content.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
     final out = <SongLine>[];
     var pending = <({String name, int col})>[];
 
