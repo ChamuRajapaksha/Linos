@@ -1,13 +1,14 @@
 import 'package:get_it/get_it.dart';
 
+import '../data/api/api_client.dart';
 import '../data/repositories/custom_tuning_store.dart';
 import '../data/repositories/last_tuning_store.dart';
 import '../data/repositories/tuning_repository.dart';
 import '../data/repositories/song_search_repository.dart';
 import '../data/repositories/chord_sheet_repository.dart';
 import '../data/services/audio_input_service.dart';
-import '../data/services/mock_song_search_repository.dart';
-import '../data/services/mock_chord_sheet_repository.dart';
+import '../data/services/api_song_search_repository.dart';
+import '../data/services/api_chord_sheet_repository.dart';
 import '../data/services/pitch_detection_service.dart';
 import '../data/services/record_audio_input_service.dart';
 import '../domain/use_cases/string_matcher.dart';
@@ -62,14 +63,17 @@ abstract final class Locator {
         ),
       );
     }
+    if (!locator.isRegistered<ApiClient>()) {
+      locator.registerLazySingleton<ApiClient>(ApiClient.new);
+    }
     if (!locator.isRegistered<SongSearchRepository>()) {
       locator.registerLazySingleton<SongSearchRepository>(
-        MockSongSearchRepository.new,
+        () => ApiSongSearchRepository(apiClient: locator<ApiClient>()),
       );
     }
     if (!locator.isRegistered<ChordSheetRepository>()) {
       locator.registerLazySingleton<ChordSheetRepository>(
-        MockChordSheetRepository.new,
+        () => ApiChordSheetRepository(apiClient: locator<ApiClient>()),
       );
     }
     if (!locator.isRegistered<SongSearchViewModel>()) {
