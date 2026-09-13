@@ -1,3 +1,4 @@
+import '../../domain/models/search_results.dart';
 import '../../domain/models/song.dart';
 import '../repositories/song_search_repository.dart';
 
@@ -7,6 +8,9 @@ import '../repositories/song_search_repository.dart';
 class MockSongSearchRepository implements SongSearchRepository {
   /// Simulated network delay for search requests.
   static const Duration searchDelay = Duration(milliseconds: 250);
+
+  /// Number of results returned per page.
+  static const int pageSize = 10;
 
   static const List<Song> _catalog = [
     Song(id: 'wonderwall', title: 'Wonderwall', artist: 'Oasis'),
@@ -59,14 +63,25 @@ class MockSongSearchRepository implements SongSearchRepository {
   List<Song> get catalog => List.unmodifiable(_catalog);
 
   @override
-  Future<List<Song>> search(String query) async {
+  Future<SearchResults> search(String query, {int page = 1}) async {
     await Future.delayed(searchDelay);
     final trimmed = query.trim();
-    if (trimmed.isEmpty) return [];
+    if (trimmed.isEmpty) {
+      return const SearchResults(items: [], page: 1, hasMore: false);
+    }
     final lower = trimmed.toLowerCase();
-    return _catalog.where((s) {
+    final filtered = _catalog.where((s) {
       return s.title.toLowerCase().contains(lower) ||
           s.artist.toLowerCase().contains(lower);
     }).toList();
+    final start = (page - 1) * pageSize;
+    final slice = start >= filtered.length
+        ? const <Song>[]
+        : filtered.skip(start).take(pageSize).toList();
+    return SearchResults(
+      items: slice,
+      page: page,
+      hasMore: (page * pageSize) < filtered.length,
+    );
   }
 }

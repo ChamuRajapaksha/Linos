@@ -49,19 +49,25 @@ void main() {
       responder = (request) async {
         expect(request.uri.path, '/api/search');
         expect(request.uri.queryParameters['query'], 'wonderwall');
+        expect(request.uri.queryParameters['page'], '2');
         respondJson(request, 200, {
           'items': [
             {'id': '6125', 'title': 'Wonderwall', 'artist': 'Oasis'},
           ],
-          'page': 1,
-          'hasMore': false,
+          'page': 2,
+          'hasMore': true,
         });
       };
 
       final repo = ApiSongSearchRepository(apiClient: client);
-      final songs = await repo.search('wonderwall');
+      final results = await repo.search('wonderwall', page: 2);
 
-      expect(songs, const [Song(id: '6125', title: 'Wonderwall', artist: 'Oasis')]);
+      expect(
+        results.items,
+        const [Song(id: '6125', title: 'Wonderwall', artist: 'Oasis')],
+      );
+      expect(results.page, 2);
+      expect(results.hasMore, isTrue);
     });
 
     test('5xx response surfaces as ApiException with the backend message',

@@ -2,36 +2,49 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linos/data/repositories/song_search_repository.dart';
+import 'package:linos/domain/models/search_results.dart';
 import 'package:linos/domain/models/song.dart';
 import 'package:linos/ui/features/chords/view_models/song_search_view_model.dart';
 
 class FakeSongSearchRepository implements SongSearchRepository {
   List<Song> catalog = [];
   Object? error;
+  int pageSize = 100;
 
   @override
-  Future<List<Song>> search(String query) async {
+  Future<SearchResults> search(String query, {int page = 1}) async {
     if (error != null) throw error!;
-    return catalog
+    final filtered = catalog
         .where((s) =>
             s.title.toLowerCase().contains(query.toLowerCase()) ||
             s.artist.toLowerCase().contains(query.toLowerCase()))
         .toList();
+    final start = (page - 1) * pageSize;
+    final slice = start >= filtered.length
+        ? const <Song>[]
+        : filtered.skip(start).take(pageSize).toList();
+    return SearchResults(
+      items: slice,
+      page: page,
+      hasMore: (page * pageSize) < filtered.length,
+    );
   }
 }
 
 class StallingSongSearchRepository implements SongSearchRepository {
-  final Completer<List<Song>> firstSearch = Completer<List<Song>>();
+  final Completer<SearchResults> firstSearch = Completer<SearchResults>();
   bool _started = false;
   List<Song> laterResults = const [];
 
   @override
-  Future<List<Song>> search(String query) {
+  Future<SearchResults> search(String query, {int page = 1}) {
     if (!_started) {
       _started = true;
       return firstSearch.future;
     }
-    return Future.value(laterResults);
+    return Future.value(
+      SearchResults(items: laterResults, page: 1, hasMore: false),
+    );
   }
 }
 
@@ -202,7 +215,9 @@ void main() {
       await second;
       expect(vm.results, [bold]);
 
-      repo.firstSearch.complete([alpha]);
+      repo.firstSearch.complete(
+        const SearchResults(items: [alpha], page: 1, hasMore: false),
+      );
       await first;
 
       expect(vm.state, SongSearchState.results);

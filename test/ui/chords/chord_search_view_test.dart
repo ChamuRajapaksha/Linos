@@ -4,6 +4,7 @@ import 'package:linos/data/repositories/chord_sheet_repository.dart';
 import 'package:linos/data/repositories/song_search_repository.dart';
 import 'package:linos/di/locator.dart';
 import 'package:linos/domain/models/chord_sheet.dart';
+import 'package:linos/domain/models/search_results.dart';
 import 'package:linos/domain/models/song.dart';
 import 'package:linos/ui/core/theme/app_theme.dart';
 import 'package:linos/ui/features/chords/view_models/song_search_view_model.dart';
@@ -13,16 +14,26 @@ import 'package:linos/ui/features/chords/views/chord_sheet_view.dart';
 class FakeSongSearchRepository implements SongSearchRepository {
   List<Song> catalog = [];
   Object? error;
+  int pageSize = 100;
 
   @override
-  Future<List<Song>> search(String query) async {
+  Future<SearchResults> search(String query, {int page = 1}) async {
     if (error != null) throw error!;
     final q = query.trim().toLowerCase();
-    return catalog
+    final filtered = catalog
         .where((s) =>
             s.title.toLowerCase().contains(q) ||
             s.artist.toLowerCase().contains(q))
         .toList();
+    final start = (page - 1) * pageSize;
+    final slice = start >= filtered.length
+        ? const <Song>[]
+        : filtered.skip(start).take(pageSize).toList();
+    return SearchResults(
+      items: slice,
+      page: page,
+      hasMore: (page * pageSize) < filtered.length,
+    );
   }
 }
 

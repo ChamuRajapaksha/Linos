@@ -6,7 +6,7 @@ import 'package:linos/data/repositories/song_search_repository.dart';
 import 'package:linos/data/services/audio_input_service.dart';
 import 'package:linos/data/services/pitch_detection_service.dart';
 import 'package:linos/domain/models/pitch_detection.dart';
-import 'package:linos/domain/models/song.dart';
+import 'package:linos/domain/models/search_results.dart';
 import 'package:linos/domain/use_cases/string_matcher.dart';
 import 'package:linos/ui/core/navigation/app_shell.dart';
 import 'package:linos/ui/core/theme/app_theme.dart';
@@ -91,7 +91,8 @@ class FakePitchDetectionService extends PitchDetectionService {
 
 class FakeSongSearchRepository implements SongSearchRepository {
   @override
-  Future<List<Song>> search(String query) async => const [];
+  Future<SearchResults> search(String query, {int page = 1}) async =>
+      const SearchResults(items: [], page: 1, hasMore: false);
 }
 
 Future<void> pumpShell(

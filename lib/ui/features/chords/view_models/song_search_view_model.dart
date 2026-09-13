@@ -29,6 +29,15 @@ class SongSearchViewModel extends ChangeNotifier {
   List<Song> _results = const [];
   List<Song> get results => _results;
 
+  int _page = 1;
+  int get page => _page;
+
+  bool _hasMore = false;
+  bool get hasMore => _hasMore;
+
+  bool _isLoadingMore = false;
+  bool get isLoadingMore => _isLoadingMore;
+
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
@@ -44,6 +53,9 @@ class SongSearchViewModel extends ChangeNotifier {
       _results = const [];
       _selectedSong = null;
       _errorMessage = null;
+      _page = 1;
+      _hasMore = false;
+      _isLoadingMore = false;
       _state = SongSearchState.idle;
       notifyListeners();
       return;
@@ -60,11 +72,17 @@ class SongSearchViewModel extends ChangeNotifier {
       _results = const [];
       _selectedSong = null;
       _errorMessage = null;
+      _page = 1;
+      _hasMore = false;
+      _isLoadingMore = false;
       _state = SongSearchState.idle;
       notifyListeners();
       return;
     }
     _query = q;
+    _page = 1;
+    _hasMore = false;
+    _isLoadingMore = false;
     _state = SongSearchState.loading;
     _errorMessage = null;
     notifyListeners();
@@ -72,9 +90,12 @@ class SongSearchViewModel extends ChangeNotifier {
     try {
       final found = await _repository.search(q);
       if (seq == _searchSeq) {
-        _results = found;
-        _state =
-            found.isEmpty ? SongSearchState.empty : SongSearchState.results;
+        _results = found.items;
+        _page = found.page;
+        _hasMore = found.hasMore;
+        _state = found.items.isEmpty
+            ? SongSearchState.empty
+            : SongSearchState.results;
       }
     } catch (e) {
       if (seq == _searchSeq) {
@@ -84,6 +105,31 @@ class SongSearchViewModel extends ChangeNotifier {
     }
     if (seq == _searchSeq) {
       notifyListeners();
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (_isLoadingMore || !_hasMore || _state != SongSearchState.results) {
+      return;
+    }
+    _isLoadingMore = true;
+    notifyListeners();
+    final seq = _searchSeq;
+    final nextPage = _page + 1;
+    try {
+      final found = await _repository.search(_query, page: nextPage);
+      if (seq == _searchSeq) {
+        _results = [..._results, ...found.items];
+        _page = found.page;
+        _hasMore = found.hasMore;
+      }
+    } catch (_) {
+      // Keep current results; the user can retry by scrolling again.
+    } finally {
+      if (seq == _searchSeq) {
+        _isLoadingMore = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -99,6 +145,9 @@ class SongSearchViewModel extends ChangeNotifier {
     _results = const [];
     _selectedSong = null;
     _errorMessage = null;
+    _page = 1;
+    _hasMore = false;
+    _isLoadingMore = false;
     _state = SongSearchState.idle;
     notifyListeners();
   }
