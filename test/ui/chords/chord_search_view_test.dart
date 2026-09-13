@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linos/data/repositories/chord_sheet_repository.dart';
@@ -15,9 +17,11 @@ class FakeSongSearchRepository implements SongSearchRepository {
   List<Song> catalog = [];
   Object? error;
   int pageSize = 100;
+  int searchCalls = 0;
 
   @override
   Future<SearchResults> search(String query, {int page = 1}) async {
+    searchCalls++;
     if (error != null) throw error!;
     final q = query.trim().toLowerCase();
     final filtered = catalog
@@ -34,6 +38,51 @@ class FakeSongSearchRepository implements SongSearchRepository {
       page: page,
       hasMore: (page * pageSize) < filtered.length,
     );
+  }
+}
+
+/// Paginated fake whose page 1 resolves immediately but every page >= 2 is
+/// gated on a per-page [Completer] the test completes via [completePage].
+class GatedSongSearchRepository implements SongSearchRepository {
+  GatedSongSearchRepository({required this.catalog, this.pageSize = 10});
+
+  final List<Song> catalog;
+  final int pageSize;
+  int searchCalls = 0;
+  final Map<int, int> pageCalls = {};
+  final Map<int, Completer<void>> gates = {};
+
+  void completePage(int page) {
+    gates[page]?.complete();
+  }
+
+  SearchResults _resultsFor(int page, String query) {
+    final q = query.trim().toLowerCase();
+    final filtered = catalog
+        .where((s) =>
+            s.title.toLowerCase().contains(q) ||
+            s.artist.toLowerCase().contains(q))
+        .toList();
+    final start = (page - 1) * pageSize;
+    final slice = start >= filtered.length
+        ? const <Song>[]
+        : filtered.skip(start).take(pageSize).toList();
+    return SearchResults(
+      items: slice,
+      page: page,
+      hasMore: (page * pageSize) < filtered.length,
+    );
+  }
+
+  @override
+  Future<SearchResults> search(String query, {int page = 1}) {
+    searchCalls++;
+    pageCalls[page] = (pageCalls[page] ?? 0) + 1;
+    if (page <= 1) {
+      return Future.value(_resultsFor(page, query));
+    }
+    final gate = gates.putIfAbsent(page, Completer<void>.new);
+    return gate.future.then((_) => _resultsFor(page, query));
   }
 }
 
@@ -55,11 +104,10 @@ const _testSheet = ChordSheet(
   lines: [SongSection('Verse'), LyricLine([])],
 );
 
-Future<SongSearchViewModel> pumpSearch(
-  WidgetTester tester, {
-  List<Song> catalog = const [],
-}) async {
-  final repo = FakeSongSearchRepository()..catalog = catalog;
+Future<SongSearchViewModel> pumpSearchWithRepository(
+  WidgetTester tester,
+  SongSearchRepository repo,
+) async {
   final vm = SongSearchViewModel(
     repository: repo,
     debounce: const Duration(milliseconds: 20),
@@ -72,6 +120,17 @@ Future<SongSearchViewModel> pumpSearch(
   );
   await tester.pump();
   return vm;
+}
+
+Future<SongSearchViewModel> pumpSearch(
+  WidgetTester tester, {
+  List<Song> catalog = const [],
+  int pageSize = 100,
+}) {
+  final repo = FakeSongSearchRepository()
+    ..catalog = catalog
+    ..pageSize = pageSize;
+  return pumpSearchWithRepository(tester, repo);
 }
 
 void main() {
@@ -197,5 +256,66 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ChordSheetView), findsOneWidget);
+  });
+
+  testWidgets(
+    'footer loader appears while a next page loads, then results append',
+    (tester) async {
+      final catalog = List.generate(
+        12,
+        (i) => Song(id: 'song-$i', title: 'Result ${i + 1}', artist: 'Artist $i'),
+      );
+      final repo = GatedSongSearchRepository(catalog: catalog, pageSize: 10);
+      await pumpSearchWithRepository(tester, repo);
+
+      await tester.enterText(find.byType(TextField), 'result');
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Result 1'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      final semantics = tester.ensureSemantics();
+      await tester.drag(find.byType(ListView), const Offset(0, -1000));
+      await tester.pump();
+
+      expect(find.bySemanticsLabel('Loading more results'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      semantics.dispose();
+
+      repo.completePage(2);
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('Loading more results'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pump();
+      expect(find.text('Result 11'), findsOneWidget);
+      expect(find.text('Result 12'), findsOneWidget);
+    },
+  );
+
+  testWidgets('hasMore=false stops further requests', (tester) async {
+    final repo = FakeSongSearchRepository()
+      ..catalog = [
+        Song(id: 'one', title: 'Only One', artist: 'Artist'),
+        Song(id: 'two', title: 'Only Two', artist: 'Artist'),
+      ]
+      ..pageSize = 10;
+    await pumpSearchWithRepository(tester, repo);
+
+    await tester.enterText(find.byType(TextField), 'only');
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+
+    expect(repo.searchCalls, 1);
+    expect(find.text('Only One'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -1000));
+    await tester.pump();
+
+    expect(repo.searchCalls, 1);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 }

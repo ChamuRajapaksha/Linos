@@ -48,12 +48,60 @@ class StallingSongSearchRepository implements SongSearchRepository {
   }
 }
 
+/// Paginated fake whose page 1 resolves immediately but every page >= 2 is
+/// gated on a per-page [Completer] the test completes via [completePage].
+class GatedSongSearchRepository implements SongSearchRepository {
+  GatedSongSearchRepository({required this.catalog, this.pageSize = 10});
+
+  final List<Song> catalog;
+  final int pageSize;
+  int searchCalls = 0;
+  final Map<int, int> pageCalls = {};
+  final Map<int, Completer<void>> gates = {};
+
+  void completePage(int page) {
+    gates[page]?.complete();
+  }
+
+  SearchResults _resultsFor(int page, String query) {
+    final q = query.trim().toLowerCase();
+    final filtered = catalog
+        .where((s) =>
+            s.title.toLowerCase().contains(q) ||
+            s.artist.toLowerCase().contains(q))
+        .toList();
+    final start = (page - 1) * pageSize;
+    final slice = start >= filtered.length
+        ? const <Song>[]
+        : filtered.skip(start).take(pageSize).toList();
+    return SearchResults(
+      items: slice,
+      page: page,
+      hasMore: (page * pageSize) < filtered.length,
+    );
+  }
+
+  @override
+  Future<SearchResults> search(String query, {int page = 1}) {
+    searchCalls++;
+    pageCalls[page] = (pageCalls[page] ?? 0) + 1;
+    if (page <= 1) {
+      return Future.value(_resultsFor(page, query));
+    }
+    final gate = gates.putIfAbsent(page, Completer<void>.new);
+    return gate.future.then((_) => _resultsFor(page, query));
+  }
+}
+
 const wonderwall = Song(id: 'wonderwall', title: 'Wonderwall', artist: 'Oasis');
 const ladyInBlack = Song(
   id: 'lady-in-black',
   title: 'Lady In Black',
   artist: 'Uriah Heep',
 );
+
+Song numberedSong(int n) =>
+    Song(id: 'song-$n', title: 'Song $n', artist: 'Artist');
 
 void main() {
   group('SongSearchViewModel', () {
@@ -222,6 +270,157 @@ void main() {
 
       expect(vm.state, SongSearchState.results);
       expect(vm.results, [bold]);
+    });
+
+    group('pagination', () {
+      test('loadMore appends results, bumps page and updates hasMore',
+          () async {
+        final repo = FakeSongSearchRepository()
+          ..catalog = [numberedSong(1), numberedSong(2), numberedSong(3)]
+          ..pageSize = 1;
+        final vm = SongSearchViewModel(
+          repository: repo,
+          debounce: Duration.zero,
+        );
+
+        await vm.search('song');
+        expect(vm.results.length, 1);
+        expect(vm.page, 1);
+        expect(vm.hasMore, true);
+
+        await vm.loadMore();
+        expect(vm.results.length, 2);
+        expect(vm.page, 2);
+        expect(vm.hasMore, true);
+
+        await vm.loadMore();
+        expect(vm.results.length, 3);
+        expect(vm.page, 3);
+        expect(vm.hasMore, false);
+      });
+
+      test('loadMore is a no-op when hasMore is false', () async {
+        final repo = FakeSongSearchRepository()
+          ..catalog = [numberedSong(1), numberedSong(2)]
+          ..pageSize = 10;
+        final vm = SongSearchViewModel(
+          repository: repo,
+          debounce: Duration.zero,
+        );
+
+        await vm.search('song');
+        expect(vm.results.length, 2);
+        expect(vm.hasMore, false);
+        expect(vm.page, 1);
+
+        await vm.loadMore();
+
+        expect(vm.results.length, 2);
+        expect(vm.page, 1);
+        expect(vm.hasMore, false);
+        expect(vm.isLoadingMore, false);
+      });
+
+      test('loadMore is ignored while already loading', () async {
+        final repo = GatedSongSearchRepository(
+          catalog: [numberedSong(1), numberedSong(2)],
+          pageSize: 1,
+        );
+        final vm = SongSearchViewModel(
+          repository: repo,
+          debounce: Duration.zero,
+        );
+
+        await vm.search('song');
+        expect(vm.hasMore, true);
+
+        final firstLoad = vm.loadMore();
+        await vm.loadMore();
+
+        expect(repo.pageCalls[2], 1);
+        expect(vm.isLoadingMore, true);
+
+        repo.completePage(2);
+        await firstLoad;
+
+        expect(vm.results.length, 2);
+        expect(vm.isLoadingMore, false);
+      });
+
+      test('loadMore failure keeps results and does not flip to error',
+          () async {
+        final repo = FakeSongSearchRepository()
+          ..catalog = [numberedSong(1), numberedSong(2), numberedSong(3)]
+          ..pageSize = 1;
+        final vm = SongSearchViewModel(
+          repository: repo,
+          debounce: Duration.zero,
+        );
+
+        await vm.search('song');
+        repo.error = StateError('boom');
+        await vm.loadMore();
+
+        expect(vm.state, SongSearchState.results);
+        expect(vm.results.length, 1);
+        expect(vm.isLoadingMore, false);
+        expect(vm.errorMessage, isNull);
+
+        repo.error = null;
+        await vm.loadMore();
+
+        expect(vm.results.length, 2);
+      });
+
+      test('stale loadMore from an old query is dropped', () async {
+        final repo = GatedSongSearchRepository(
+          catalog: [numberedSong(1), numberedSong(2), numberedSong(3)],
+          pageSize: 1,
+        );
+        final vm = SongSearchViewModel(
+          repository: repo,
+          debounce: Duration.zero,
+        );
+
+        await vm.search('song');
+        expect(vm.results, [numberedSong(1)]);
+        expect(vm.hasMore, true);
+
+        final staleLoad = vm.loadMore();
+
+        await vm.search('3');
+        expect(vm.results, [numberedSong(3)]);
+
+        repo.completePage(2);
+        await staleLoad;
+
+        expect(vm.results, [numberedSong(3)]);
+        expect(vm.state, SongSearchState.results);
+        expect(vm.isLoadingMore, false);
+      });
+
+      test('new search resets page, hasMore and isLoadingMore', () async {
+        final repo = FakeSongSearchRepository()
+          ..catalog = [numberedSong(1), numberedSong(2), numberedSong(3)]
+          ..pageSize = 1;
+        final vm = SongSearchViewModel(
+          repository: repo,
+          debounce: Duration.zero,
+        );
+
+        await vm.search('song');
+        await vm.loadMore();
+        expect(vm.results.length, 2);
+        expect(vm.page, 2);
+        expect(vm.hasMore, true);
+
+        await vm.search('song');
+
+        expect(vm.results.length, 1);
+        expect(vm.page, 1);
+        expect(vm.hasMore, true);
+        expect(vm.isLoadingMore, false);
+      });
     });
   });
 }
