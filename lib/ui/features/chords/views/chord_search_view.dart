@@ -99,6 +99,9 @@ class _ChordSearchViewState extends State<ChordSearchView> {
                     ),
                     SongSearchState.results => _ResultsList(
                       results: widget.viewModel.results,
+                      hasMore: widget.viewModel.hasMore,
+                      isLoadingMore: widget.viewModel.isLoadingMore,
+                      onLoadMore: widget.viewModel.loadMore,
                       onSelect: (song) {
                         widget.viewModel.selectSong(song);
                         Navigator.of(context).push(
@@ -219,26 +222,99 @@ class _PopularChip extends StatelessWidget {
   }
 }
 
-class _ResultsList extends StatelessWidget {
-  const _ResultsList({required this.results, required this.onSelect});
+class _ResultsList extends StatefulWidget {
+  const _ResultsList({
+    required this.results,
+    required this.hasMore,
+    required this.isLoadingMore,
+    required this.onLoadMore,
+    required this.onSelect,
+  });
 
   final List<Song> results;
+  final bool hasMore;
+  final bool isLoadingMore;
+  final VoidCallback onLoadMore;
   final ValueChanged<Song> onSelect;
+
+  @override
+  State<_ResultsList> createState() => _ResultsListState();
+}
+
+class _ResultsListState extends State<_ResultsList> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void didUpdateWidget(_ResultsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.hasMore && !widget.isLoadingMore && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (widget.hasMore && !widget.isLoadingMore && mounted) {
+          _maybeLoadMore();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    _maybeLoadMore();
+  }
+
+  void _maybeLoadMore() {
+    if (!widget.hasMore || widget.isLoadingMore || !_scrollController.hasClients) {
+      return;
+    }
+    final position = _scrollController.position;
+    if (position.maxScrollExtent <= 0) {
+      widget.onLoadMore();
+    } else if (position.pixels >= position.maxScrollExtent * 0.8) {
+      widget.onLoadMore();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      itemCount: results.length,
+      itemCount: widget.results.length + (widget.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
-        final song = results[index];
+        if (index >= widget.results.length) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 12),
+            child: Semantics(
+              label: 'Loading more results',
+              child: Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+              ),
+            ),
+          );
+        }
+        final song = widget.results[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: _SongResultTile(
             song: song,
             onTap: () {
               Haptics.selectionTap();
-              onSelect(song);
+              widget.onSelect(song);
             },
           ),
         );
