@@ -11,7 +11,7 @@
 | 0 | Chord search feature (Phase 1) | Done | — |
 | 1 | Backend proxy (Dart Shelf + SQLite + UG scraper) | Done | — |
 | 2 | Flutter real API client (`http` + repos) | Done | M1 |
-| 3 | List pagination (infinite scroll) | Not Started | M2 |
+| 3 | List pagination (infinite scroll) | Done | M2 |
 | 4 | Transposition | Not Started | — |
 | 5 | Autoscroll / playback | Not Started | — |
 | 6 | Favorites + recent searches | Not Started | — |
@@ -177,33 +177,33 @@ The client's `ChordSheet` domain model is reused verbatim by the backend respons
 
 **Tasks**
 
-- [ ] `lib/domain/models/search_results.dart`: `SearchResults{items: List<Song>, page: int, hasMore: bool}` value class
+- [x] `lib/domain/models/search_results.dart`: `SearchResults{items: List<Song>, page: int, hasMore: bool}` value class
   → `feat(model): add paginated search results model`
 
-- [ ] Change `SongSearchRepository.search(String query, {int page = 1})` → `Future<SearchResults>`; update `MockSongSearchRepository` to slice the catalog by a page size and compute `hasMore`
+- [x] Change `SongSearchRepository.search(String query, {int page = 1})` → `Future<SearchResults>`; update `MockSongSearchRepository` to slice the catalog by a page size and compute `hasMore`
   → `refactor(repo): paginate song search interface`
 
-- [ ] Update `ApiSongSearchRepository` (passes page, parses `hasMore`) and every test fake (`FakeSongSearchRepository` in `song_search_view_model_test`, `chord_search_view_test`, `app_shell_test`) to the paginated signature
+- [x] Update `ApiSongSearchRepository` (passes page, parses `hasMore`) and every test fake (`FakeSongSearchRepository` in `song_search_view_model_test`, `chord_search_view_test`, `app_shell_test`) to the paginated signature
   → `refactor(repo): propagate paginated signature through fakes`
 
-- [ ] `SongSearchViewModel`: hold `page`, `hasMore`, `isLoadingMore`; debounce path resets to page 1; `loadMore()` guards on `hasMore`/`isLoadingMore`, appends results, bumps page; stale-page sequence guard like the existing `_searchSeq`
+- [x] `SongSearchViewModel`: hold `page`, `hasMore`, `isLoadingMore`; debounce path resets to page 1; `loadMore()` guards on `hasMore`/`isLoadingMore`, appends results, bumps page; stale-page sequence guard like the existing `_searchSeq`
   → `feat(vm): add infinite scroll state to song search`
 
-- [ ] `ChordSearchView`: `ScrollController` on the results list, `loadMore` when within 80% of bottom, trailing pagination footer loader (small spinner, `Semantics` label); dispose controller
+- [x] `ChordSearchView`: `ScrollController` on the results list, `loadMore` when within 80% of bottom, trailing pagination footer loader (small spinner, `Semantics` label); dispose controller
   → `feat(ui): add infinite scroll to search results`
 
-- [ ] Unit tests for `loadMore` append/hasMore/isLoadingMore guards + widget test for footer loader appearing and results appending
+- [x] Unit tests for `loadMore` append/hasMore/isLoadingMore guards + widget test for footer loader appearing and results appending
   → `test(ui): cover infinite scroll pagination`
 
-- [ ] Run `flutter analyze` + full `flutter test` with the new interface; fix any ripple in chord search/widget tests
+- [x] Run `flutter analyze` + full `flutter test` with the new interface; fix any ripple in chord search/widget tests
   → `chore(chords): verify pagination integration`
 
 **Done when**
 
-- [ ] Search loads page 1, scroll-to-bottom appends page 2+, footer loader shows while fetching
-- [ ] `hasMore:false` stops further requests
-- [ ] Stale responses from an old query are dropped (same guarantee as before)
-- [ ] Mock repo still passes its own tests with slicing; existing tuner suite green
+- [x] Search loads page 1, scroll-to-bottom appends page 2+, footer loader shows while fetching
+- [x] `hasMore:false` stops further requests
+- [x] Stale responses from an old query are dropped (same guarantee as before)
+- [x] Mock repo still passes its own tests with slicing; existing tuner suite green
 
 ---
 
