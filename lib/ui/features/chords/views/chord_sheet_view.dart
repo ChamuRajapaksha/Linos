@@ -61,7 +61,6 @@ class _ChordSheetViewState extends State<ChordSheetView>
     widget.viewModel.setProgress(progress);
   }
 
-  // ignore: unused_element
   void _handlePlayPause() {
     if (widget.viewModel.isAutoscrolling) {
       widget.viewModel.stopAutoscroll();
