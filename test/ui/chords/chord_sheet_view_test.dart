@@ -150,4 +150,120 @@ void main() {
 
     expect(vm.selectedChord, 'C');
   });
+
+  testWidgets('transpose stepper buttons are visible after load', (
+    tester,
+  ) async {
+    await pumpSheet(tester, sheet: _testSheet);
+
+    expect(find.byIcon(Icons.add), findsOneWidget);
+    expect(find.byIcon(Icons.remove), findsOneWidget);
+  });
+
+  testWidgets('transposing up +1 shows transposed chords and offset label', (
+    tester,
+  ) async {
+    await pumpSheet(tester, sheet: _testSheet);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+
+    expect(find.text('C#'), findsOneWidget);
+    expect(find.text('G#'), findsNWidgets(2));
+    expect(find.text('+1'), findsOneWidget);
+  });
+
+  testWidgets('offset label shows +2 and tapping it resets transposition', (
+    tester,
+  ) async {
+    await pumpSheet(tester, sheet: _testSheet);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+
+    expect(find.text('+2'), findsOneWidget);
+
+    await tester.tap(find.text('+2'));
+    await tester.pump();
+
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('C'), findsOneWidget);
+    expect(find.text('G'), findsNWidgets(2));
+  });
+
+  testWidgets('plus button is disabled at +12', (tester) async {
+    final repo = FakeChordSheetRepository()..sheet = _testSheet;
+    final vm = ChordSheetViewModel(repository: repo);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark,
+        home: ChordSheetView(song: _testSong, viewModel: vm),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    for (var i = 0; i < 12; i++) {
+      vm.transposeUp();
+    }
+    await tester.pump();
+
+    final addButton = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.add),
+    );
+    expect(addButton.onPressed, isNull);
+    expect(find.text('+12'), findsOneWidget);
+  });
+
+  testWidgets('minus button is disabled at -12', (tester) async {
+    final repo = FakeChordSheetRepository()..sheet = _testSheet;
+    final vm = ChordSheetViewModel(repository: repo);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark,
+        home: ChordSheetView(song: _testSong, viewModel: vm),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    for (var i = 0; i < 12; i++) {
+      vm.transposeDown();
+    }
+    await tester.pump();
+
+    final removeButton = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.remove),
+    );
+    expect(removeButton.onPressed, isNull);
+    expect(find.text('-12'), findsOneWidget);
+  });
+
+  testWidgets('tapping chord at +1 opens diagram with transposed name', (
+    tester,
+  ) async {
+    await pumpSheet(tester, sheet: _testSheet);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+
+    await tester.tap(find.text('Hello'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('C#'), findsWidgets);
+  });
+
+  testWidgets('reset transposition button has correct semantics', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await pumpSheet(tester, sheet: _testSheet);
+
+    final node = tester.getSemantics(find.text('0'));
+    expect(node.label, contains('Reset transposition'));
+
+    handle.dispose();
+  });
 }
