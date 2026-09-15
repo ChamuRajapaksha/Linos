@@ -5,6 +5,7 @@ import 'package:flutter/scheduler.dart';
 
 import '../../../core/haptics/haptic_feedback.dart';
 import '../../../core/theme/linos_palette.dart';
+import '../../../core/widgets/press_scale.dart';
 import '../../chords/view_models/chord_sheet_view_model.dart';
 import '../../../../domain/models/chord_sheet.dart';
 import '../../../../domain/models/song.dart';
@@ -191,13 +192,32 @@ class _ChordSheetViewState extends State<ChordSheetView>
                 message: widget.viewModel.errorMessage,
                 onRetry: () => unawaited(widget.viewModel.load(widget.song)),
               ),
-              ChordSheetViewState.ready => _SheetContent(
-                sheet: sheet!,
-                palette: palette,
-                theme: theme,
-                onChordTap: widget.viewModel.selectChord,
-                transposedChord: widget.viewModel.transposedChord,
-                scrollController: _scrollController,
+              ChordSheetViewState.ready => Stack(
+                children: [
+                  Positioned.fill(
+                    child: _SheetContent(
+                      sheet: sheet!,
+                      palette: palette,
+                      theme: theme,
+                      onChordTap: widget.viewModel.selectChord,
+                      transposedChord: widget.viewModel.transposedChord,
+                      scrollController: _scrollController,
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _AutoscrollPanel(
+                        viewModel: widget.viewModel,
+                        palette: palette,
+                        theme: theme,
+                        isAutoscrolling: widget.viewModel.isAutoscrolling,
+                        onTogglePlay: _handlePlayPause,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               _ => const SizedBox.shrink(),
             },
@@ -458,6 +478,187 @@ class _TransposeStepper extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AutoscrollPanel extends StatelessWidget {
+  const _AutoscrollPanel({
+    required this.viewModel,
+    required this.palette,
+    required this.theme,
+    required this.isAutoscrolling,
+    required this.onTogglePlay,
+  });
+
+  final ChordSheetViewModel viewModel;
+  final LinosPalette palette;
+  final ThemeData theme;
+  final bool isAutoscrolling;
+  final VoidCallback onTogglePlay;
+
+  @override
+  Widget build(BuildContext context) {
+    final double speed = viewModel.autoscrollSpeedPx;
+    final bool canDecrease = speed > ChordSheetViewModel.minAutoscrollSpeedPx;
+    final bool canIncrease = speed < ChordSheetViewModel.maxAutoscrollSpeedPx;
+
+    return Container(
+      key: const Key('autoscroll-panel'),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: isAutoscrolling
+            ? palette.accent.withValues(alpha: 0.10)
+            : palette.panel,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isAutoscrolling
+              ? palette.accent.withValues(alpha: 0.5)
+              : palette.panelBorder,
+        ),
+      ),
+      child: AnimatedSwitcher(
+        duration: animDuration(context),
+        child: isAutoscrolling
+            ? _buildExpanded(context, speed, canDecrease, canIncrease)
+            : _buildCollapsed(),
+      ),
+    );
+  }
+
+  Widget _buildCollapsed() {
+    return Tooltip(
+      message: 'Play auto-scroll',
+      child: Semantics(
+        button: true,
+        label: 'Play auto-scroll',
+        child: IconButton(
+          onPressed: () {
+            unawaited(Haptics.selectionTap());
+            onTogglePlay();
+          },
+          icon: const Icon(Icons.play_arrow),
+          color: palette.accent,
+          tooltip: 'Play auto-scroll',
+          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          padding: EdgeInsets.zero,
+          visualDensity: VisualDensity.compact,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpanded(
+    BuildContext context,
+    double speed,
+    bool canDecrease,
+    bool canIncrease,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Tooltip(
+              message: 'Pause auto-scroll',
+              child: Semantics(
+                button: true,
+                label: 'Pause auto-scroll',
+                child: IconButton(
+                  onPressed: () {
+                    unawaited(Haptics.selectionTap());
+                    onTogglePlay();
+                  },
+                  icon: const Icon(Icons.pause),
+                  color: palette.accent,
+                  tooltip: 'Pause auto-scroll',
+                  constraints: const BoxConstraints.tightFor(
+                    width: 32,
+                    height: 32,
+                  ),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
+            Semantics(
+              button: true,
+              label: canDecrease
+                  ? 'Decrease speed to ${(speed - 10).round()} pixels per second'
+                  : 'Decrease speed',
+              child: IconButton(
+                onPressed: canDecrease
+                    ? () {
+                        unawaited(Haptics.selectionTap());
+                        viewModel.setAutoscrollSpeed(speed - 10);
+                      }
+                    : null,
+                icon: const Icon(Icons.remove),
+                color: palette.accent,
+                disabledColor: palette.textMuted,
+                tooltip: 'Decrease speed',
+                iconSize: 18,
+                constraints: const BoxConstraints.tightFor(
+                  width: 32,
+                  height: 32,
+                ),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                '${speed.round()} px/s',
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: palette.text,
+                ),
+              ),
+            ),
+            Semantics(
+              button: true,
+              label: canIncrease
+                  ? 'Increase speed to ${(speed + 10).round()} pixels per second'
+                  : 'Increase speed',
+              child: IconButton(
+                onPressed: canIncrease
+                    ? () {
+                        unawaited(Haptics.selectionTap());
+                        viewModel.setAutoscrollSpeed(speed + 10);
+                      }
+                    : null,
+                icon: const Icon(Icons.add),
+                color: palette.accent,
+                disabledColor: palette.textMuted,
+                tooltip: 'Increase speed',
+                iconSize: 18,
+                constraints: const BoxConstraints.tightFor(
+                  width: 32,
+                  height: 32,
+                ),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              value: viewModel.progress,
+              minHeight: 3,
+              color: palette.accent,
+              backgroundColor: palette.textMuted,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
