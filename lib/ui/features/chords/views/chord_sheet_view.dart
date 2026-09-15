@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../../core/haptics/haptic_feedback.dart';
 import '../../../core/theme/linos_palette.dart';
@@ -24,11 +25,80 @@ class ChordSheetView extends StatefulWidget {
   State<ChordSheetView> createState() => _ChordSheetViewState();
 }
 
-class _ChordSheetViewState extends State<ChordSheetView> {
+class _ChordSheetViewState extends State<ChordSheetView>
+    with SingleTickerProviderStateMixin {
+  final ScrollController _scrollController = ScrollController();
+  late final Ticker _ticker;
+  Duration _lastTick = Duration.zero;
+
   @override
   void initState() {
     super.initState();
+    _ticker = createTicker(_onTick);
+    _scrollController.addListener(_onScroll);
     unawaited(widget.viewModel.load(widget.song));
+  }
+
+  @override
+  void dispose() {
+    if (widget.viewModel.isAutoscrolling) {
+      widget.viewModel.stopAutoscroll();
+    }
+    _ticker.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (!position.hasContentDimensions || !position.hasPixels) return;
+    final double max = position.maxScrollExtent;
+    final double progress = max > 0
+        ? (position.pixels / max).clamp(0.0, 1.0).toDouble()
+        : 0;
+    widget.viewModel.setProgress(progress);
+  }
+
+  // ignore: unused_element
+  void _handlePlayPause() {
+    if (widget.viewModel.isAutoscrolling) {
+      widget.viewModel.stopAutoscroll();
+      _ticker.stop();
+    } else if (MediaQuery.disableAnimationsOf(context)) {
+      if (_scrollController.hasClients) {
+        final position = _scrollController.position;
+        if (position.hasContentDimensions &&
+            position.hasPixels &&
+            position.maxScrollExtent > 0) {
+          _scrollController.jumpTo(position.maxScrollExtent);
+        }
+      }
+    } else {
+      widget.viewModel.startAutoscroll();
+      _lastTick = Duration.zero;
+      _ticker.start();
+    }
+  }
+
+  void _onTick(Duration elapsed) {
+    final Duration dt = elapsed - _lastTick;
+    _lastTick = elapsed;
+    if (dt == Duration.zero || !widget.viewModel.isAutoscrolling) return;
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (!position.hasPixels || !position.hasContentDimensions) return;
+    if (position.isScrollingNotifier.value) return;
+    final double seconds = dt.inMicroseconds / Duration.microsecondsPerSecond;
+    final double target =
+        position.pixels + widget.viewModel.autoscrollSpeedPx * seconds;
+    if (target >= position.maxScrollExtent) {
+      _ticker.stop();
+      widget.viewModel.stopAutoscroll();
+      _scrollController.jumpTo(position.maxScrollExtent);
+    } else {
+      position.jumpTo(target);
+    }
   }
 
   @override
@@ -127,6 +197,7 @@ class _ChordSheetViewState extends State<ChordSheetView> {
                 theme: theme,
                 onChordTap: widget.viewModel.selectChord,
                 transposedChord: widget.viewModel.transposedChord,
+                scrollController: _scrollController,
               ),
               _ => const SizedBox.shrink(),
             },
@@ -186,6 +257,7 @@ class _SheetContent extends StatelessWidget {
     required this.theme,
     required this.onChordTap,
     required this.transposedChord,
+    required this.scrollController,
   });
 
   final ChordSheet sheet;
@@ -193,11 +265,15 @@ class _SheetContent extends StatelessWidget {
   final ThemeData theme;
   final ValueChanged<String?> onChordTap;
   final String Function(String) transposedChord;
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      controller: scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16).copyWith(
+        bottom: 96,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
