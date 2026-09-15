@@ -13,7 +13,7 @@
 | 2 | Flutter real API client (`http` + repos) | Done | M1 |
 | 3 | List pagination (infinite scroll) | Done | M2 |
 | 4 | Transposition | Done | — |
-| 5 | Autoscroll / playback | Not Started | — |
+| 5 | Autoscroll / playback | Done | — |
 | 6 | Favorites + recent searches | Not Started | — |
 | 7 | Final verification | Not Started | M1–M6 |
 
@@ -246,27 +246,27 @@ The client's `ChordSheet` domain model is reused verbatim by the backend respons
 
 **Tasks**
 
-- [ ] `ChordSheetViewModel`: add `autoscrollEnabled`/`isAutoscrolling`, `autoscrollSpeedPx` (default ~60 px/s, range 30–150), `startAutoscroll()`, `stopAutoscroll()`, `setAutoscrollSpeed()`, and a `progress` value fed by the view's scroll position (for the control readout)
+- [x] `ChordSheetViewModel`: add `autoscrollEnabled`/`isAutoscrolling`, `autoscrollSpeedPx` (default ~60 px/s, range 30–150), `startAutoscroll()`, `stopAutoscroll()`, `setAutoscrollSpeed()`, and a `progress` value fed by the view's scroll position (for the control readout)
   → `feat(autoscroll): add autoscroll state to sheet view model`
 
-- [ ] `ChordSheetView`: own `ScrollController`; chrono-driven ticker advances offset while playing; deactivates VM state on `dispose`; **auto-stop** when reaching max scroll extent; if `MediaQuery.disableAnimationsOf` → jump instead of animate
+- [x] `ChordSheetView`: own `ScrollController`; chrono-driven ticker advances offset while playing; deactivates VM state on `dispose`; **auto-stop** when reaching max scroll extent; if `MediaQuery.disableAnimationsOf` → jump instead of animate
   → `feat(autoscroll): drive smooth autoscroll of sheet body`
 
-- [ ] Autoscroll control panel: floating pill docked above the bottom edge — play/pause toggle (brass icon when active), `−`/`+` speed steppers with readout (px/s), a thin progress bar; haptic on toggle; collapses to just the play/pause when inactive
+- [x] Autoscroll control panel: floating pill docked above the bottom edge — play/pause toggle (brass icon when active), `−`/`+` speed steppers with readout (px/s), a thin progress bar; haptic on toggle; collapses to just the play/pause when inactive
   → `feat(autoscroll): add playback control panel`
 
-- [ ] Semantics: toggle labeled `Play auto-scroll`/`Pause auto-scroll`, speed buttons labeled with resulting px/s; honor reduced-motion everywhere in the engine
+- [x] Semantics: toggle labeled `Play auto-scroll`/`Pause auto-scroll`, speed buttons labeled with resulting px/s; honor reduced-motion everywhere in the engine
   → `chore(autoscroll): honor reduced motion and semantics`
 
-- [ ] Tests: VM start/stop/speed bounds + widget test that the scroll offset advances over time, stops at bottom, and that controls render in the reduced-motion variant (assessing `disableAnimations` path)
+- [x] Tests: VM start/stop/speed bounds + widget test that the scroll offset advances over time, stops at bottom, and that controls render in the reduced-motion variant (assessing `disableAnimations` path)
   → `test(autoscroll): cover playback controls and auto scroll`
 
 **Done when**
 
-- [ ] Play begins scrolling; pause freezes; speed adjusts mid-scroll
-- [ ] Reaching the sheet bottom auto-pauses
-- [ ] Reduced-motion users get an instant jump, no timed animation
-- [ ] Existing sheet tests still pass
+- [x] Play begins scrolling; pause freezes; speed adjusts mid-scroll
+- [x] Reaching the sheet bottom auto-pauses
+- [x] Reduced-motion users get an instant jump, no timed animation
+- [x] Existing sheet tests still pass
 
 ---
 
