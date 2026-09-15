@@ -12,7 +12,7 @@
 | 1 | Backend proxy (Dart Shelf + SQLite + UG scraper) | Done | — |
 | 2 | Flutter real API client (`http` + repos) | Done | M1 |
 | 3 | List pagination (infinite scroll) | Done | M2 |
-| 4 | Transposition | Not Started | — |
+| 4 | Transposition | Done | — |
 | 5 | Autoscroll / playback | Not Started | — |
 | 6 | Favorites + recent searches | Not Started | — |
 | 7 | Final verification | Not Started | M1–M6 |
@@ -213,30 +213,30 @@ The client's `ChordSheet` domain model is reused verbatim by the backend respons
 
 **Tasks**
 
-- [ ] `lib/domain/use_cases/chord_transposer.dart`: parse root + suffix from a chord name; shift root by semitones with wrap; enharmonic mapping (e.g. C#→Db context-aware or fixed sharp-based); handle `m/maj7/7/sus2/sus4/dim/dim7/aug/6/9/add9/5` and slash bass chords (`G/B`); no-op at 0 and on unparseable input (returns input)
+- [x] `lib/domain/use_cases/chord_transposer.dart`: parse root + suffix from a chord name; shift root by semitones with wrap; enharmonic mapping (e.g. C#→Db context-aware or fixed sharp-based); handle `m/maj7/7/sus2/sus4/dim/dim7/aug/6/9/add9/5` and slash bass chords (`G/B`); no-op at 0 and on unparseable input (returns input)
   → `feat(transpose): add chord transposition algorithm`
 
-- [ ] Unit tests: sharp/flat roots, octave wrap (B→C), common suffixes, slash chords, diminished, unknown/uppercase input passthrough
+- [x] Unit tests: sharp/flat roots, octave wrap (B→C), common suffixes, slash chords, diminished, unknown/uppercase input passthrough
   → `test(transpose): cover chord transposer edge cases`
 
-- [ ] `ChordSheetViewModel`: add `transposition` (int, −12..+12, default 0), `transposeUp()`, `transposeDown()`, `resetTransposition()`, and `transposedChord(String name)` convenience using `ChordTransposer`
+- [x] `ChordSheetViewModel`: add `transposition` (int, −12..+12, default 0), `transposeUp()`, `transposeDown()`, `resetTransposition()`, and `transposedChord(String name)` convenience using `ChordTransposer`
   → `feat(transpose): add transposition state to sheet view model`
 
-- [ ] `ChordSheetView` AppBar: transposition stepper — `−`/`+` icon buttons, current offset label (e.g. `+3`), long-press or dedicated reset; haptic on change; stays visible next to the key chip
+- [x] `ChordSheetView` AppBar: transposition stepper — `−`/`+` icon buttons, current offset label (e.g. `+3`), long-press or dedicated reset; haptic on change; stays visible next to the key chip
   → `feat(transpose): add transposition controls to sheet header`
 
-- [ ] `_WordChordColumn` renders `viewModel.transposedChord(chord)`; `showChordDiagram` receives the transposed name (diagram finds the shape by the displayed name); Semantics labels match the visible name
+- [x] `_WordChordColumn` renders `viewModel.transposedChord(chord)`; `showChordDiagram` receives the transposed name (diagram finds the shape by the displayed name); Semantics labels match the visible name
   → `feat(transpose): render transposed chords in sheet and diagrams`
 
-- [ ] VM tests (range clamp, up/down/reset, transposedChord correctness) + widget tests (labels transpose, stepper bounds disable buttons, reset restores original)
+- [x] VM tests (range clamp, up/down/reset, transposedChord correctness) + widget tests (labels transpose, stepper bounds disable buttons, reset restores original)
   → `test(transpose): cover view model and sheet transposition ui`
 
 **Done when**
 
-- [ ] Tapping `+`/`−` moves every chord in the sheet by the matching semitones and the label reflects it
-- [ ] `C` at +1 renders `C#` (or configured enharmonic), `B` at +1 renders `C`
-- [ ] Diagram sheet shows the transposed chord name
-- [ ] Range clamped to ±12; reset key present
+- [x] Tapping `+`/`−` moves every chord in the sheet by the matching semitones and the label reflects it
+- [x] `C` at +1 renders `C#` (or configured enharmonic), `B` at +1 renders `C`
+- [x] Diagram sheet shows the transposed chord name
+- [x] Range clamped to ±12; reset key present
 
 ---
 
