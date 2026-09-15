@@ -11,7 +11,11 @@ import 'chord_diagram_sheet.dart';
 
 /// Displays the chord sheet for a [Song].
 class ChordSheetView extends StatefulWidget {
-  const ChordSheetView({super.key, required this.song, required this.viewModel});
+  const ChordSheetView({
+    super.key,
+    required this.song,
+    required this.viewModel,
+  });
 
   final Song song;
   final ChordSheetViewModel viewModel;
@@ -65,31 +69,43 @@ class _ChordSheetViewState extends State<ChordSheetView> {
               ],
             ),
             actions: [
-              if (sheet?.key != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: palette.accent.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: palette.accent.withValues(alpha: 0.5),
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (sheet?.key != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: palette.accent.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: palette.accent.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Text(
+                            widget.viewModel.transposedKey!,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: palette.accent,
+                            ),
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                      ],
+                      _TransposeStepper(
+                        viewModel: widget.viewModel,
+                        palette: palette,
+                        theme: theme,
                       ),
-                      child: Text(
-                        sheet!.key!,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: palette.accent,
-                        ),
-                      ),
-                    ),
+                    ],
                   ),
                 ),
+              ),
             ],
           ),
           body: SafeArea(
@@ -103,14 +119,14 @@ class _ChordSheetViewState extends State<ChordSheetView> {
               ),
               ChordSheetViewState.error => _ErrorView(
                 message: widget.viewModel.errorMessage,
-                onRetry: () =>
-                    unawaited(widget.viewModel.load(widget.song)),
+                onRetry: () => unawaited(widget.viewModel.load(widget.song)),
               ),
               ChordSheetViewState.ready => _SheetContent(
                 sheet: sheet!,
                 palette: palette,
                 theme: theme,
                 onChordTap: widget.viewModel.selectChord,
+                transposedChord: widget.viewModel.transposedChord,
               ),
               _ => const SizedBox.shrink(),
             },
@@ -142,9 +158,7 @@ class _ErrorView extends StatelessWidget {
             Text(
               "Couldn't load chord sheet.",
               textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: palette.text,
-              ),
+              style: theme.textTheme.titleMedium?.copyWith(color: palette.text),
             ),
             if (message != null) ...[
               const SizedBox(height: 8),
@@ -171,12 +185,14 @@ class _SheetContent extends StatelessWidget {
     required this.palette,
     required this.theme,
     required this.onChordTap,
+    required this.transposedChord,
   });
 
   final ChordSheet sheet;
   final LinosPalette palette;
   final ThemeData theme;
   final ValueChanged<String?> onChordTap;
+  final String Function(String) transposedChord;
 
   @override
   Widget build(BuildContext context) {
@@ -211,6 +227,7 @@ class _SheetContent extends StatelessWidget {
                           palette: palette,
                           theme: theme,
                           onTap: onChordTap,
+                          transposedChord: transposedChord,
                         ),
                     ],
                   ),
@@ -228,22 +245,25 @@ class _WordChordColumn extends StatelessWidget {
     required this.palette,
     required this.theme,
     required this.onTap,
+    required this.transposedChord,
   });
 
   final WordChord wordChord;
   final LinosPalette palette;
   final ThemeData theme;
   final ValueChanged<String?> onTap;
+  final String Function(String) transposedChord;
 
   @override
   Widget build(BuildContext context) {
+    final String? chord = wordChord.chord;
+    final String? display = chord == null ? null : transposedChord(chord);
     return GestureDetector(
       onTap: () {
-        final chord = wordChord.chord;
-        if (chord != null) {
-          unawaited(showChordDiagram(context, chordName: chord));
+        if (display != null) {
+          unawaited(showChordDiagram(context, chordName: display));
         }
-        onTap(wordChord.chord);
+        onTap(display);
         unawaited(Haptics.selectionTap());
       },
       behavior: HitTestBehavior.opaque,
@@ -253,9 +273,10 @@ class _WordChordColumn extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (wordChord.chord != null)
+            if (chord != null)
               Text(
-                wordChord.chord!,
+                display!,
+                semanticsLabel: display,
                 style: TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 12,
@@ -268,14 +289,98 @@ class _WordChordColumn extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               wordChord.word,
-              style: TextStyle(
-                fontSize: 14,
-                color: palette.text,
-                height: 1.4,
-              ),
+              style: TextStyle(fontSize: 14, color: palette.text, height: 1.4),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TransposeStepper extends StatelessWidget {
+  const _TransposeStepper({
+    required this.viewModel,
+    required this.palette,
+    required this.theme,
+  });
+
+  final ChordSheetViewModel viewModel;
+  final LinosPalette palette;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final int transposition = viewModel.transposition;
+    final bool canLower = transposition > ChordSheetViewModel.minTransposition;
+    final bool canRaise = transposition < ChordSheetViewModel.maxTransposition;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: palette.accent.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: canLower
+                ? () {
+                    viewModel.transposeDown();
+                    unawaited(Haptics.selectionTap());
+                  }
+                : null,
+            icon: const Icon(Icons.remove, size: 18),
+            color: palette.accent,
+            disabledColor: palette.textMuted,
+            tooltip: 'Transpose down',
+            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+          Semantics(
+            label: 'Reset transposition',
+            button: true,
+            child: GestureDetector(
+              onTap: () {
+                if (transposition != 0) {
+                  viewModel.resetTransposition();
+                  unawaited(Haptics.selectionTap());
+                }
+              },
+              child: Tooltip(
+                message: 'Reset transposition',
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    transposition > 0 ? '+$transposition' : '$transposition',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: transposition == 0
+                          ? palette.textMuted
+                          : palette.accent,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: canRaise
+                ? () {
+                    viewModel.transposeUp();
+                    unawaited(Haptics.selectionTap());
+                  }
+                : null,
+            icon: const Icon(Icons.add, size: 18),
+            color: palette.accent,
+            disabledColor: palette.textMuted,
+            tooltip: 'Transpose up',
+            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
       ),
     );
   }
