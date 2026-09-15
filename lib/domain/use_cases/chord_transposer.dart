@@ -37,6 +37,8 @@ String? _transposeNote(String note, int semitones) {
 }
 
 class ChordTransposer {
+  const ChordTransposer();
+
   /// Transposes [chord] by [semitones] semitones, preserving suffix and slash bass.
   String transpose(String chord, int semitones) {
     if (semitones == 0 || chord.isEmpty) return chord;
