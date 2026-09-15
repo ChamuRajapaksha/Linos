@@ -213,4 +213,126 @@ void main() {
       expect(vm.transposition, 0);
     });
   });
+
+  group('autoscroll', () {
+    test('initial values are stopped at default speed and progress 0', () {
+      final vm = ChordSheetViewModel(repository: FakeChordSheetRepository());
+
+      expect(vm.isAutoscrolling, isFalse);
+      expect(vm.autoscrollSpeedPx, 60);
+      expect(vm.progress, 0);
+    });
+
+    test('start sets true and repeated start is a no-op', () {
+      final vm = ChordSheetViewModel(repository: FakeChordSheetRepository());
+      var notifications = 0;
+      vm.addListener(() => notifications++);
+
+      vm.startAutoscroll();
+      expect(vm.isAutoscrolling, isTrue);
+      expect(notifications, 1);
+
+      vm.startAutoscroll();
+      expect(vm.isAutoscrolling, isTrue);
+      expect(notifications, 1);
+    });
+
+    test('stop sets false and repeated stop is a no-op', () {
+      final vm = ChordSheetViewModel(repository: FakeChordSheetRepository());
+      var notifications = 0;
+      vm.addListener(() => notifications++);
+
+      vm.stopAutoscroll();
+      expect(vm.isAutoscrolling, isFalse);
+      expect(notifications, 0);
+
+      vm.startAutoscroll();
+      vm.stopAutoscroll();
+      expect(vm.isAutoscrolling, isFalse);
+      expect(notifications, 2);
+
+      vm.stopAutoscroll();
+      expect(notifications, 2);
+    });
+
+    test('setAutoscrollSpeed applies a value within range', () {
+      final vm = ChordSheetViewModel(repository: FakeChordSheetRepository());
+
+      vm.setAutoscrollSpeed(90);
+      expect(vm.autoscrollSpeedPx, 90);
+
+      vm.setAutoscrollSpeed(120.5);
+      expect(vm.autoscrollSpeedPx, 120.5);
+    });
+
+    test('setAutoscrollSpeed clamps at min and max', () {
+      final vm = ChordSheetViewModel(repository: FakeChordSheetRepository());
+
+      vm.setAutoscrollSpeed(10);
+      expect(vm.autoscrollSpeedPx, 30);
+
+      vm.setAutoscrollSpeed(500);
+      expect(vm.autoscrollSpeedPx, 150);
+    });
+
+    test('setAutoscrollSpeed does not notify when unchanged', () {
+      final vm = ChordSheetViewModel(repository: FakeChordSheetRepository());
+      var notifications = 0;
+      vm.addListener(() => notifications++);
+
+      vm.setAutoscrollSpeed(60);
+      expect(notifications, 0);
+
+      vm.setAutoscrollSpeed(20);
+      expect(vm.autoscrollSpeedPx, 30);
+      expect(notifications, 1);
+
+      vm.setAutoscrollSpeed(25);
+      expect(notifications, 1);
+    });
+
+    test('setProgress clamps to 0..1', () {
+      final vm = ChordSheetViewModel(repository: FakeChordSheetRepository());
+
+      vm.setProgress(0.5);
+      expect(vm.progress, 0.5);
+
+      vm.setProgress(-1);
+      expect(vm.progress, 0);
+
+      vm.setProgress(2);
+      expect(vm.progress, 1);
+    });
+
+    test('setProgress does not notify when unchanged', () {
+      final vm = ChordSheetViewModel(repository: FakeChordSheetRepository());
+      var notifications = 0;
+      vm.addListener(() => notifications++);
+
+      vm.setProgress(0.5);
+      expect(notifications, 1);
+
+      vm.setProgress(0.5);
+      expect(notifications, 1);
+    });
+
+    test('load() resets autoscroll state', () async {
+      final repo = FakeChordSheetRepository()..sheet = sheet;
+      final vm = ChordSheetViewModel(repository: repo);
+      await vm.load(song);
+
+      vm.startAutoscroll();
+      vm.setAutoscrollSpeed(90);
+      vm.setProgress(0.5);
+      expect(vm.isAutoscrolling, isTrue);
+      expect(vm.autoscrollSpeedPx, 90);
+      expect(vm.progress, 0.5);
+
+      await vm.load(song);
+
+      expect(vm.isAutoscrolling, isFalse);
+      expect(vm.autoscrollSpeedPx, 60);
+      expect(vm.progress, 0);
+    });
+  });
 }
