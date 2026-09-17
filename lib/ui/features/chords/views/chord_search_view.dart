@@ -87,7 +87,14 @@ class _ChordSearchViewState extends State<ChordSearchView> {
                 listenable: widget.viewModel,
                 builder: (context, _) {
                   return switch (widget.viewModel.state) {
-                    SongSearchState.idle => _IdleView(onChipTap: _onChipTap),
+                    SongSearchState.idle => _IdleView(
+                      onChipTap: _onChipTap,
+                      recents: widget.viewModel.recents,
+                      onClearRecents: () {
+                        Haptics.selectionTap();
+                        widget.viewModel.clearRecents();
+                      },
+                    ),
                     SongSearchState.loading => const Center(
                       child: SizedBox(
                         width: 22,
@@ -135,8 +142,14 @@ class _ChordSearchViewState extends State<ChordSearchView> {
 }
 
 class _IdleView extends StatelessWidget {
-  const _IdleView({required this.onChipTap});
+  const _IdleView({
+    required this.recents,
+    required this.onClearRecents,
+    required this.onChipTap,
+  });
 
+  final List<String> recents;
+  final VoidCallback onClearRecents;
   final ValueChanged<String> onChipTap;
 
   static const List<String> _popular = [
@@ -163,7 +176,46 @@ class _IdleView extends StatelessWidget {
                 color: palette.textMuted,
               ),
             ),
-            const SizedBox(height: 28),
+            if (recents.isNotEmpty) ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  children: [
+                    Text(
+                      'RECENT',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: onClearRecents,
+                      style: TextButton.styleFrom(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Clear',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: palette.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  for (final label in recents)
+                    _PopularChip(label: label, onTap: () => onChipTap(label)),
+                ],
+              ),
+              const SizedBox(height: 28),
+            ],
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
