@@ -87,9 +87,7 @@ class _ChordSearchViewState extends State<ChordSearchView> {
                 listenable: widget.viewModel,
                 builder: (context, _) {
                   return switch (widget.viewModel.state) {
-                    SongSearchState.idle => _IdleView(
-                      onChipTap: _onChipTap,
-                    ),
+                    SongSearchState.idle => _IdleView(onChipTap: _onChipTap),
                     SongSearchState.loading => const Center(
                       child: SizedBox(
                         width: 22,
@@ -102,6 +100,8 @@ class _ChordSearchViewState extends State<ChordSearchView> {
                       hasMore: widget.viewModel.hasMore,
                       isLoadingMore: widget.viewModel.isLoadingMore,
                       onLoadMore: widget.viewModel.loadMore,
+                      isFavorite: widget.viewModel.isFavorite,
+                      onToggleFavorite: widget.viewModel.toggleFavorite,
                       onSelect: (song) {
                         widget.viewModel.selectSong(song);
                         Navigator.of(context).push(
@@ -119,8 +119,9 @@ class _ChordSearchViewState extends State<ChordSearchView> {
                     SongSearchState.empty => _EmptyView(),
                     SongSearchState.error => _ErrorView(
                       message: widget.viewModel.errorMessage,
-                      onRetry: () =>
-                          widget.viewModel.onQueryChanged(widget.viewModel.query),
+                      onRetry: () => widget.viewModel.onQueryChanged(
+                        widget.viewModel.query,
+                      ),
                     ),
                   };
                 },
@@ -167,9 +168,7 @@ class _IdleView extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 'POPULAR',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  letterSpacing: 2,
-                ),
+                style: theme.textTheme.labelSmall?.copyWith(letterSpacing: 2),
               ),
             ),
             const SizedBox(height: 10),
@@ -228,6 +227,8 @@ class _ResultsList extends StatefulWidget {
     required this.hasMore,
     required this.isLoadingMore,
     required this.onLoadMore,
+    required this.isFavorite,
+    required this.onToggleFavorite,
     required this.onSelect,
   });
 
@@ -235,6 +236,8 @@ class _ResultsList extends StatefulWidget {
   final bool hasMore;
   final bool isLoadingMore;
   final VoidCallback onLoadMore;
+  final bool Function(Song) isFavorite;
+  final ValueChanged<Song> onToggleFavorite;
   final ValueChanged<Song> onSelect;
 
   @override
@@ -274,7 +277,9 @@ class _ResultsListState extends State<_ResultsList> {
   }
 
   void _maybeLoadMore() {
-    if (!widget.hasMore || widget.isLoadingMore || !_scrollController.hasClients) {
+    if (!widget.hasMore ||
+        widget.isLoadingMore ||
+        !_scrollController.hasClients) {
       return;
     }
     final position = _scrollController.position;
@@ -312,6 +317,11 @@ class _ResultsListState extends State<_ResultsList> {
           padding: const EdgeInsets.only(bottom: 8),
           child: _SongResultTile(
             song: song,
+            isFavorite: widget.isFavorite(song),
+            onToggleFavorite: () {
+              Haptics.selectionTap();
+              widget.onToggleFavorite(song);
+            },
             onTap: () {
               Haptics.selectionTap();
               widget.onSelect(song);
@@ -324,9 +334,16 @@ class _ResultsListState extends State<_ResultsList> {
 }
 
 class _SongResultTile extends StatelessWidget {
-  const _SongResultTile({required this.song, required this.onTap});
+  const _SongResultTile({
+    required this.song,
+    required this.isFavorite,
+    required this.onToggleFavorite,
+    required this.onTap,
+  });
 
   final Song song;
+  final bool isFavorite;
+  final VoidCallback onToggleFavorite;
   final VoidCallback onTap;
 
   @override
@@ -369,7 +386,28 @@ class _SongResultTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: palette.textMuted),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Semantics(
+                      label: isFavorite
+                          ? 'Remove from favorites'
+                          : 'Add to favorites',
+                      button: true,
+                      child: IconButton(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: onToggleFavorite,
+                        icon: Icon(
+                          isFavorite ? Icons.star : Icons.star_outline,
+                          color: isFavorite
+                              ? palette.accent
+                              : palette.textMuted,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: palette.textMuted),
+                  ],
+                ),
               ],
             ),
           ),
