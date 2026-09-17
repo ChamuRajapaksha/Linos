@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../../../data/repositories/song_search_repository.dart';
+import '../../../../data/services/favorites_repository.dart';
+import '../../../../data/services/recent_searches_repository.dart';
 import '../../../../domain/models/song.dart';
 
 enum SongSearchState { idle, loading, results, empty, error }
@@ -11,11 +13,24 @@ class SongSearchViewModel extends ChangeNotifier {
   SongSearchViewModel({
     required SongSearchRepository repository,
     Duration debounce = const Duration(milliseconds: 300),
+    FavoritesRepository? favorites,
+    RecentSearchesRepository? recents,
   })  : _repository = repository,
-        _debounce = debounce;
+        _debounce = debounce,
+        _favorites = favorites ?? FavoritesRepository(),
+        _recents = recents ?? RecentSearchesRepository() {
+    _favorites.addListener(_onRepositoryChanged);
+    _recents.addListener(_onRepositoryChanged);
+    unawaited(_favorites.load());
+    unawaited(_recents.load());
+  }
 
   final SongSearchRepository _repository;
   final Duration _debounce;
+  final FavoritesRepository _favorites;
+  final RecentSearchesRepository _recents;
+
+  void _onRepositoryChanged() => notifyListeners();
 
   Timer? _debounceTimer;
   int _searchSeq = 0;
@@ -62,7 +77,32 @@ class SongSearchViewModel extends ChangeNotifier {
     }
     _query = q;
     _selectedSong = null;
-    _debounceTimer = Timer(_debounce, () => unawaited(search(_query)));
+    _debounceTimer = Timer(_debounce, () {
+      unawaited(recordSearch(_query));
+      unawaited(search(_query));
+    });
+  }
+
+  bool isFavorite(Song song) => _favorites.contains(song);
+
+  List<Song> get favorites => _favorites.favorites;
+
+  List<String> get recents => _recents.recent;
+
+  Future<void> toggleFavorite(Song song) async {
+    await _favorites.toggle(song);
+  }
+
+  Future<void> recordSearch(String query) async {
+    await _recents.add(query);
+  }
+
+  Future<void> clearRecents() async {
+    await _recents.clear();
+  }
+
+  Future<void> removeRecent(String query) async {
+    await _recents.remove(query);
   }
 
   Future<void> search(String value) async {
@@ -155,6 +195,8 @@ class SongSearchViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _favorites.removeListener(_onRepositoryChanged);
+    _recents.removeListener(_onRepositoryChanged);
     super.dispose();
   }
 }
