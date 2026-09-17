@@ -5,6 +5,7 @@ import 'package:linos/data/repositories/song_search_repository.dart';
 import 'package:linos/domain/models/search_results.dart';
 import 'package:linos/domain/models/song.dart';
 import 'package:linos/ui/features/chords/view_models/song_search_view_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeSongSearchRepository implements SongSearchRepository {
   List<Song> catalog = [];
@@ -104,6 +105,8 @@ Song numberedSong(int n) =>
     Song(id: 'song-$n', title: 'Song $n', artist: 'Artist');
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
   group('SongSearchViewModel', () {
     test('initial state is idle with empty query and results', () {
       final vm = SongSearchViewModel(

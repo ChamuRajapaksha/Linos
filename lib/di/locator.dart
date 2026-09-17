@@ -9,6 +9,8 @@ import '../data/repositories/chord_sheet_repository.dart';
 import '../data/services/audio_input_service.dart';
 import '../data/services/api_song_search_repository.dart';
 import '../data/services/api_chord_sheet_repository.dart';
+import '../data/services/favorites_repository.dart';
+import '../data/services/recent_searches_repository.dart';
 import '../data/services/pitch_detection_service.dart';
 import '../data/services/record_audio_input_service.dart';
 import '../domain/use_cases/string_matcher.dart';
@@ -76,10 +78,22 @@ abstract final class Locator {
         () => ApiChordSheetRepository(apiClient: locator<ApiClient>()),
       );
     }
+    if (!locator.isRegistered<FavoritesRepository>()) {
+      locator.registerLazySingleton<FavoritesRepository>(
+        FavoritesRepository.new,
+      );
+    }
+    if (!locator.isRegistered<RecentSearchesRepository>()) {
+      locator.registerLazySingleton<RecentSearchesRepository>(
+        RecentSearchesRepository.new,
+      );
+    }
     if (!locator.isRegistered<SongSearchViewModel>()) {
       locator.registerLazySingleton<SongSearchViewModel>(
         () => SongSearchViewModel(
           repository: locator<SongSearchRepository>(),
+          favorites: locator<FavoritesRepository>(),
+          recents: locator<RecentSearchesRepository>(),
         ),
       );
     }

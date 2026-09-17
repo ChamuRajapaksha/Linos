@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:linos/data/repositories/song_search_repository.dart';
 import 'package:linos/data/services/audio_input_service.dart';
 import 'package:linos/data/services/pitch_detection_service.dart';
@@ -115,6 +116,7 @@ Future<void> pumpShell(
 }
 
 void main() {
+  SharedPreferences.setMockInitialValues({});
   testWidgets('both navigation destinations render', (tester) async {
     final audio = FakeAudioInputService();
     final tunerViewModel = TunerViewModel(
