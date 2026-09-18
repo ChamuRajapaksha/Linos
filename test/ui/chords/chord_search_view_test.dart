@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:linos/data/repositories/chord_sheet_repository.dart';
 import 'package:linos/data/repositories/song_search_repository.dart';
 import 'package:linos/di/locator.dart';
@@ -134,6 +135,7 @@ Future<SongSearchViewModel> pumpSearch(
 }
 
 void main() {
+    SharedPreferences.setMockInitialValues({});
   setUpAll(() async {
     await locator.reset();
     locator.registerSingleton<ChordSheetRepository>(
@@ -317,5 +319,50 @@ void main() {
 
     expect(repo.searchCalls, 1);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('tapping the star toggles favorite state on a result tile',
+      (tester) async {
+    await pumpSearch(tester, catalog: [_testSong]);
+    await tester.enterText(find.byType(TextField), 'test');
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.star_outline), findsOneWidget);
+    expect(find.byIcon(Icons.star), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.star_outline));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.star), findsOneWidget);
+    expect(find.byIcon(Icons.star_outline), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.star));
+    await tester.pump();
+
+    expect(find.byIcon(Icons.star_outline), findsOneWidget);
+  });
+
+  testWidgets('RECENT section appears after a search and Clear empties it',
+      (tester) async {
+    await pumpSearch(tester, catalog: [_testSong]);
+
+    await tester.enterText(find.byType(TextField), 'test');
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '');
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
+
+    expect(find.text('RECENT'), findsOneWidget);
+    expect(find.text('test'), findsOneWidget);
+    expect(find.text('Clear'), findsOneWidget);
+
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('RECENT'), findsNothing);
+    expect(find.text('test'), findsNothing);
   });
 }
